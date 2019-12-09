@@ -44,6 +44,7 @@ class download_worker(base_worker):
                 shutil.copyfileobj(response, out_file)
                 out_size = out_file.tell()
 
+            # TODO what if we dont get a content-length?
             content_length = int(headers.get('Content-Length'))
             if out_size != content_length:
                 return json.dumps({'state': 502, 
