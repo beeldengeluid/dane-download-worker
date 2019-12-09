@@ -38,7 +38,7 @@ class dl_server():
         self.channel.stop_consuming()
 
     def simulate_request(self):
-        job = jobspec.jobspec(source_url='http://prd-app-bng-01.beeldengeluid.nl:8093/viz/NETWERK______-WON00531377', 
+        job = jobspec.jobspec(source_url='http://prd-app-bng-01.beeldengeluid.nl:8093/viz/007034001___D-DIV00Z050L2', 
             source_id='ITM123', source_set='NISVtest',
             tasks=jobspec.taskSequential(['DOWNLOAD', 'TEST']))
 
