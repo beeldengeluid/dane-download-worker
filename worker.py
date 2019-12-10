@@ -12,13 +12,11 @@ class download_worker(base_worker):
     # listen to the same queue
     __queue_name = 'DOWNLOAD'
 
-    def __init__(self, whitelist, out_dir, host, exchange='DANE-exchange', 
-            port=5672, user='guest', password='guest'):
-        super().__init__(host=host, queue=self.__queue_name, 
-                binding_key='#.DOWNLOAD', port=port, user=user, password=password)
+    def __init__(self, whitelist, config):
+        super().__init__(queue=self.__queue_name, 
+                binding_key='#.DOWNLOAD', config=config)
 
         self.whitelist = whitelist
-        self.out_dir = out_dir
 
     def callback(self, job):
         parse = urlparse(job.source_url)
@@ -26,14 +24,20 @@ class download_worker(base_worker):
             return json.dumps({'state': 403, 
                 'message': 'Source url not permitted'})
 
+        if 'SHARED' not in job.response.keys() or \
+                'TEMP_FOLDER' not in job.response['SHARED'].keys():
+            #TODO find better error no.
+            return json.dumps({'state': 500, 
+                'message': "TEMP_FOLDER not specified, cannot handle request"})
+
+        temp_dir = job.response['SHARED']['TEMP_FOLDER']
+        if not os.path.exists(temp_dir):
+            #TODO find better error no.
+            return json.dumps({'state': 500, 
+                'message': "Non existing TEMP_FOLDER, cannot handle request"})
+
         fn = os.path.basename(parse.path)
-
-        # TODO store in smaller subdirs
-        dir_path = os.path.join(self.out_dir, job.source_set, job.source_id)
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-
-        file_path = os.path.join(dir_path, fn)
+        file_path = os.path.join(temp_dir, fn)
         try:
             with req.urlopen(job.source_url) as response, \
                     open(file_path, 'wb') as out_file:
@@ -44,9 +48,8 @@ class download_worker(base_worker):
                 shutil.copyfileobj(response, out_file)
                 out_size = out_file.tell()
 
-            # TODO what if we dont get a content-length?
-            content_length = int(headers.get('Content-Length'))
-            if out_size != content_length:
+            content_length = int(headers.get('Content-Length', failobj=-1))
+            if content_length > -1 and out_size != content_length:
                 return json.dumps({'state': 502, 
                     'message': "Received incomplete file: " +
                         "{} ({} out of {} bytes)".format(fn, out_size, 
@@ -69,7 +72,7 @@ class download_worker(base_worker):
                 file_type = c_type.split('/')[0]
             else:
                 # TODO logs this, as idk when this would occur
-                # and potentially can just pass c_type on then
+                # and potentially can just pass entire c_type on then
                 file_type = 'unknown'
 
             return json.dumps({'state': 200, 
@@ -83,13 +86,7 @@ if __name__ == '__main__':
     config = settings.config
     rconfig = config['RABBITMQ']
 
-    dlw = download_worker(config['WHITELIST'],
-            config['IN_FOLDER'],
-            host=rconfig['host'],
-            port=rconfig['port'],
-            exchange=rconfig['exchange'],
-            user=rconfig['user'],
-            password=rconfig['password'])
+    dlw = download_worker(config['WHITELIST'], config)
 
     print(' # Initialising worker. Ctrl+C to exit')
     try: 
