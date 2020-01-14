@@ -11,5 +11,6 @@ config = {
 
         'WHITELIST': [
            'some-domain.example'
-        ]
+        ],
+        'API': 'http://localhost:5500/DANE/'
 }

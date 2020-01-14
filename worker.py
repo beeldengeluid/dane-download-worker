@@ -17,6 +17,8 @@ class download_worker(base_worker):
                 binding_key='#.DOWNLOAD', config=config)
 
         self.whitelist = whitelist
+        self.search_api = config['API'] + '/job/search/{}'
+        self.job_api = config['API'] + '/job/{}'
 
     def callback(self, job):
         parse = urlparse(job.source_url)
@@ -38,6 +40,37 @@ class download_worker(base_worker):
 
         fn = os.path.basename(parse.path)
         file_path = os.path.join(temp_dir, fn)
+
+        if os.path.exists(file_path):
+            # source file already downloaded
+            # figure out which job it was
+            try:
+                r = req.urlopen(self.search_api.format(job.source_id)).read()
+                r = r.decode(r.headers.get_content_charset())
+                jobs = json.loads(r)['jobs']
+
+                for j in jobs:
+                    if j != job.job_id:
+                        r = req.urlopen(self.job_api.format(j)).read()
+                        r = r.decode(r.headers.get_content_charset())
+                        jb = jobspec.from_json(r)
+                        if 'DOWNLOAD' in job.response.keys():
+                            # and copy information from that job
+                            resp = jb.response['DOWNLOAD']
+                            return json.dumps({'state': 200, 
+                                'message': 'Success', **resp})
+            except HTTPError as e:
+                if e.code == 404:
+                    return json.dumps({'state': e.code, 
+                        'message': e.reason})
+                elif e.code == 500:
+                    return json.dumps({'state': 503, 
+                        'message': "Source host 500 error: " + e.reason})
+                else:
+                    return json.dumps({'state': 500, 
+                        'message': "Unhandled source host error: "
+                                + str(e.code) + " " + e.reason})
+
         try:
             with req.urlopen(job.source_url) as response, \
                     open(file_path, 'wb') as out_file:

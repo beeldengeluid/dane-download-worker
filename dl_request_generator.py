@@ -47,7 +47,7 @@ class dl_server():
             os.mkdir(DL_DIR)
 
         job = jobspec.jobspec(source_url='http://prd-app-bng-01.beeldengeluid.nl:8093/viz/007034001___D-DIV00Z050L2', 
-            source_id='ITM123', source_set='NISVtest',
+            source_id='ITM123', source_set='TEST',
             tasks=jobspec.taskSequential(['DOWNLOAD', 'TEST']),
             response={'SHARED' : { 'TEMP_FOLDER': DL_DIR }})
 
