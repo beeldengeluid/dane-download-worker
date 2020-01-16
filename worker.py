@@ -4,6 +4,7 @@ import settings
 from urllib.parse import urlparse
 import urllib.request as req
 from urllib.error import HTTPError
+from urllib.parse import urljoin
 import shutil
 import os
 
@@ -17,8 +18,8 @@ class download_worker(base_worker):
                 binding_key='#.DOWNLOAD', config=config)
 
         self.whitelist = whitelist
-        self.search_api = config['API'] + '/job/search/{}'
-        self.job_api = config['API'] + '/job/{}'
+        self.search_api = urljoin(config['API'], 'job/search/{}')
+        self.job_api = urljoin(config['API'], 'job/{}')
 
     def callback(self, job):
         parse = urlparse(job.source_url)
@@ -45,16 +46,18 @@ class download_worker(base_worker):
             # source file already downloaded
             # figure out which job it was
             try:
-                r = req.urlopen(self.search_api.format(job.source_id)).read()
-                r = r.decode(r.headers.get_content_charset())
-                jobs = json.loads(r)['jobs']
+                r = req.urlopen(self.search_api.format(job.source_id))
+                txt = r.read().decode(r.headers.get_content_charset(
+                        failobj="utf-8"))
+                jobs = json.loads(txt)['jobs']
 
                 for j in jobs:
                     if j != job.job_id:
-                        r = req.urlopen(self.job_api.format(j)).read()
-                        r = r.decode(r.headers.get_content_charset())
-                        jb = jobspec.from_json(r)
-                        if 'DOWNLOAD' in job.response.keys():
+                        r = req.urlopen(self.job_api.format(j))
+                        txt = r.read().decode(r.headers.get_content_charset(
+                                failobj="utf-8"))
+                        jb = jobspec.from_json(txt)
+                        if 'DOWNLOAD' in jb.response.keys():
                             # and copy information from that job
                             resp = jb.response['DOWNLOAD']
                             return json.dumps({'state': 200, 
