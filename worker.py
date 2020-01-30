@@ -1,4 +1,3 @@
-from DANE_utils.base_classes import base_worker
 import json
 import settings
 from urllib.parse import urlparse
@@ -8,7 +7,9 @@ from urllib.parse import urljoin
 import shutil
 import os
 
-class download_worker(base_worker):
+import DANE.base_classes
+
+class download_worker(DANE.base_classes.base_worker):
     # we specify a queue name because every worker of this type should 
     # listen to the same queue
     __queue_name = 'DOWNLOAD'
