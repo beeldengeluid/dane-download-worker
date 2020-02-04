@@ -9,6 +9,14 @@ import os
 
 import DANE.base_classes
 
+
+def parseSize(size, units = 
+        {"B": 1, "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}):
+    """Human readable size to bytes"""
+
+    number, unit = [string.strip() for string in size.upper().split()]
+    return int(float(number)*units[unit])
+
 class download_worker(DANE.base_classes.base_worker):
     # we specify a queue name because every worker of this type should 
     # listen to the same queue
@@ -39,6 +47,16 @@ class download_worker(DANE.base_classes.base_worker):
             #TODO find better error no.
             return json.dumps({'state': 500, 
                 'message': "Non existing TEMP_FOLDER, cannot handle request"})
+
+        if 'FS_THRESHOLD' in self.config.keys():
+            thres_bytes = parseSize(self.config['FS_THRESHOLD'])
+            # this might be Unix only
+            # check if there is enough disk space, to do something meaningful
+            disk_stats = os.statvfs(temp_dir)
+            bytes_free = statvfs.f_frsize * statvfs.f_bfree 
+            if bytes_free <= thres_bytes:
+                # Refuse and requeue for now
+                raise DANE.errors.RefuseJobException('Insufficient disk space')
 
         fn = os.path.basename(parse.path)
         file_path = os.path.join(temp_dir, fn)

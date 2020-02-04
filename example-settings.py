@@ -8,9 +8,13 @@ config = {
             'user': 'DANE',
             'password': 'DANE_PW'
         },
-
+        # Domains we are permitted to download from
         'WHITELIST': [
            'some-domain.example'
         ],
-        'API': 'http://localhost:5500/DANE/'
+        # URL to send DANE api requests
+        'API': 'http://localhost:5500/DANE/',
+        # Under this threshold downloading is postponed until more free space
+        # becomes available. Counts free space on entire partition.
+        'FS_THRESHOLD': '10GB'
 }
