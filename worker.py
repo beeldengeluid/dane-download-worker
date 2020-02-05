@@ -14,6 +14,10 @@ def parseSize(size, units =
         {"B": 1, "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}):
     """Human readable size to bytes"""
 
+    if not ' ' in size:
+        # no space in size, assume last 2 char are unit
+        size = size[:-2] + ' ' + size[-2:]
+
     number, unit = [string.strip() for string in size.upper().split()]
     return int(float(number)*units[unit])
 
@@ -53,7 +57,7 @@ class download_worker(DANE.base_classes.base_worker):
             # this might be Unix only
             # check if there is enough disk space, to do something meaningful
             disk_stats = os.statvfs(temp_dir)
-            bytes_free = statvfs.f_frsize * statvfs.f_bfree 
+            bytes_free = disk_stats.f_frsize * disk_stats.f_bfree 
             if bytes_free <= thres_bytes:
                 # Refuse and requeue for now
                 raise DANE.errors.RefuseJobException('Insufficient disk space')
