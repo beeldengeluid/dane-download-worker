@@ -79,7 +79,7 @@ class download_worker(DANE.base_classes.base_worker):
                         r = req.urlopen(self.job_api.format(j))
                         txt = r.read().decode(r.headers.get_content_charset(
                                 failobj="utf-8"))
-                        jb = jobspec.from_json(txt)
+                        jb = DANE.Job.from_json(txt)
                         if 'DOWNLOAD' in jb.response.keys():
                             # and copy information from that job
                             resp = jb.response['DOWNLOAD']
