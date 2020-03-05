@@ -1,0 +1,4 @@
+DOWNLOADER:
+    FS_THRESHOLD: '10GB'
+    WHITELIST:
+        - 'some-domain.example'
