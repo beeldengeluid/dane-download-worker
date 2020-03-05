@@ -14,6 +14,10 @@ def parseSize(size, units =
         {"B": 1, "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}):
     """Human readable size to bytes"""
 
+    if not ' ' in size:
+        # no space in size, assume last 2 char are unit
+        size = size[:-2] + ' ' + size[-2:]
+
     number, unit = [string.strip() for string in size.upper().split()]
     return int(float(number)*units[unit])
 
@@ -56,7 +60,7 @@ class download_worker(DANE.base_classes.base_worker):
         if self.threshold is not None:
             # check if there is enough disk space, to do something meaningful
             disk_stats = os.statvfs(temp_dir)
-            bytes_free = statvfs.f_frsize * statvfs.f_bfree 
+            bytes_free = disk_stats.f_frsize * disk_stats.f_bfree 
             if bytes_free <= self.threshold:
                 # Refuse and requeue for now
                 raise DANE.errors.RefuseJobException('Insufficient disk space')
@@ -78,7 +82,7 @@ class download_worker(DANE.base_classes.base_worker):
                         r = req.urlopen(self.job_api.format(j))
                         txt = r.read().decode(r.headers.get_content_charset(
                                 failobj="utf-8"))
-                        jb = jobspec.from_json(txt)
+                        jb = DANE.Job.from_json(txt)
                         if 'DOWNLOAD' in jb.response.keys():
                             # and copy information from that job
                             resp = jb.response['DOWNLOAD']
