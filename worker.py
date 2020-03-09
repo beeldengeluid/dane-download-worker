@@ -1,8 +1,7 @@
 import json
-from urllib.parse import urlparse
 import urllib.request as req
 from urllib.error import HTTPError
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 import shutil
 import os
 
