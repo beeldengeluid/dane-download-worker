@@ -57,11 +57,11 @@ class download_worker(DANE.base_classes.base_worker):
                 'message': "Non existing TEMP_FOLDER, cannot handle request"})
 
         if self.threshold is not None:
-            # check if there is enough disk space, to do something meaningful
+            # check if there is enough disk space to do something meaningful
             disk_stats = os.statvfs(temp_dir)
             bytes_free = disk_stats.f_frsize * disk_stats.f_bfree 
             if bytes_free <= self.threshold:
-                # Refuse and requeue for now
+                #  There isnt. Refuse and requeue for now
                 raise DANE.errors.RefuseJobException('Insufficient disk space')
 
         fn = os.path.basename(parse.path)
@@ -70,6 +70,7 @@ class download_worker(DANE.base_classes.base_worker):
         if os.path.exists(file_path):
             # source file already downloaded
             # figure out which job it was
+            # so we can copy and share download info from that job
             try:
                 r = req.urlopen(self.search_api.format(job.source_id))
                 txt = r.read().decode(r.headers.get_content_charset(
@@ -83,20 +84,23 @@ class download_worker(DANE.base_classes.base_worker):
                                 failobj="utf-8"))
                         jb = DANE.Job.from_json(txt)
                         if 'DOWNLOAD' in jb.response.keys():
-                            # and copy information from that job
+                            # share copied info
                             resp = jb.response['DOWNLOAD']
                             return json.dumps({'state': 200, 
                                 'message': 'Success', **resp})
             except HTTPError as e:
                 if e.code == 404:
-                    return json.dumps({'state': e.code, 
-                        'message': e.reason})
+                    # No info available about the download
+                    # re-download and gather info a new
+                    # Note: this shouldnt happen unless previous jobs
+                    # didnt do correct clean-up
+                    pass
                 elif e.code == 500:
                     return json.dumps({'state': 503, 
-                        'message': "Source host 500 error: " + e.reason})
+                        'message': "DANE api 500 error: " + e.reason})
                 else:
                     return json.dumps({'state': 500, 
-                        'message': "Unhandled source host error: "
+                        'message': "Unhandled DANE api error: "
                                 + str(e.code) + " " + e.reason})
 
         try:
