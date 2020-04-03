@@ -2,6 +2,7 @@ import json
 import urllib.request as req
 from urllib.error import HTTPError
 from urllib.parse import urljoin, urlparse
+from requests.utils import requote_uri
 import shutil
 import os
 
@@ -39,6 +40,7 @@ class download_worker(DANE.base_classes.base_worker):
             self.threshold = parseSize(config.DOWNLOADER.FS_THRESHOLD)
 
     def callback(self, job):
+        job.source_url = requote_uri(job.source_url)
         parse = urlparse(job.source_url)
         if parse.netloc not in self.whitelist:
             return json.dumps({'state': 403, 
