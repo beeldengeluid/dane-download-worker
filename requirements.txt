@@ -1,1 +1,1 @@
--e git+https://github.com/CLARIAH/DANE.git#egg=DANE
+DANE
