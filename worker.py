@@ -8,6 +8,7 @@ import os
 
 import DANE.base_classes
 from DANE.config import cfg
+from DANE import Result
 
 
 def parseSize(size, units = 
@@ -31,32 +32,29 @@ class download_worker(DANE.base_classes.base_worker):
                 binding_key='#.DOWNLOAD', config=config)
 
         self.whitelist = config.DOWNLOADER.WHITELIST
-        self.search_api = urljoin(config.DANE.API_URL, 'job/search/{}')
-        self.job_api = urljoin(config.DANE.API_URL, 'job/{}')
 
         self.threshold = None
         if 'FS_THRESHOLD' in config.DOWNLOADER.keys():
             # in bytes, might only work on Unix
             self.threshold = parseSize(config.DOWNLOADER.FS_THRESHOLD)
 
-    def callback(self, job):
-        job.source_url = requote_uri(job.source_url)
-        parse = urlparse(job.source_url)
+    def callback(self, task, doc):
+        target_url = requote_uri(doc.target['url'])
+        parse = urlparse(target_url)
         if parse.netloc not in self.whitelist:
-            return json.dumps({'state': 403, 
-                'message': 'Source url not permitted'})
+            return {'state': 403, 
+                'message': 'Source url not permitted'}
 
-        if 'SHARED' not in job.response.keys() or \
-                'TEMP_FOLDER' not in job.response['SHARED'].keys():
-            #TODO find better error no.
-            return json.dumps({'state': 500, 
-                'message': "TEMP_FOLDER not specified, cannot handle request"})
+        if 'PATHS' not in task.args.keys() or \
+                'TEMP_FOLDER' not in task.args['PATHS'].keys():
+            task.args['PATHS'] = task.args.get('PATHS', {})
+            task.args['PATHS'].update(self.getDirs(doc))
 
-        temp_dir = job.response['SHARED']['TEMP_FOLDER']
+        temp_dir = task.args['PATHS']['TEMP_FOLDER']
         if not os.path.exists(temp_dir):
             #TODO find better error no.
-            return json.dumps({'state': 500, 
-                'message': "Non existing TEMP_FOLDER, cannot handle request"})
+            return {'state': 500, 
+                'message': "Non existing TEMP_FOLDER, cannot handle request"}
 
         if self.threshold is not None:
             # check if there is enough disk space to do something meaningful
@@ -71,42 +69,25 @@ class download_worker(DANE.base_classes.base_worker):
 
         if os.path.exists(file_path):
             # source file already downloaded
-            # figure out which job it was
-            # so we can copy and share download info from that job
+            # try to find that result so we can copy download info 
             try:
-                r = req.urlopen(self.search_api.format(job.source_id))
-                txt = r.read().decode(r.headers.get_content_charset(
-                        failobj="utf-8"))
-                jobs = json.loads(txt)['jobs']
+                possibles = self.handler.searchResult(doc._id, 'DOWNLOAD')
+                if len(possibles) > 0:
+                    # arbitrarly choose the first one to copy, perhaps should have some
+                    # timestamp mechanism..
 
-                for j in jobs:
-                    if j != job.job_id:
-                        r = req.urlopen(self.job_api.format(j))
-                        txt = r.read().decode(r.headers.get_content_charset(
-                                failobj="utf-8"))
-                        jb = DANE.Job.from_json(txt)
-                        if 'DOWNLOAD' in jb.response.keys():
-                            # share copied info
-                            resp = jb.response['DOWNLOAD']
-                            return json.dumps({'state': 200, 
-                                'message': 'Success', **resp})
-            except HTTPError as e:
-                if e.code == 404:
-                    # No info available about the download
-                    # re-download and gather info a new
-                    # Note: this shouldnt happen unless previous jobs
-                    # didnt do correct clean-up
-                    pass
-                elif e.code == 500:
-                    return json.dumps({'state': 503, 
-                        'message': "DANE api 500 error: " + e.reason})
-                else:
-                    return json.dumps({'state': 500, 
-                        'message': "Unhandled DANE api error: "
-                                + str(e.code) + " " + e.reason})
+                    r = Result(self.generator, payload=possibles[0].payload,
+                            api=self.handler)
+                    r.save(task._id)
+
+                    return {'state': 200, 'message': 'Success'}
+            except KeyError as e:
+                # seems the tasks or results no longer exists
+                # just redownload and get fresh info
+                pass
 
         try:
-            with req.urlopen(job.source_url) as response, \
+            with req.urlopen(target_url) as response, \
                     open(file_path, 'wb') as out_file:
                 headers = response.info()
                 # TODO could use content-disposition to rename file
@@ -123,15 +104,15 @@ class download_worker(DANE.base_classes.base_worker):
                             content_length)})
         except HTTPError as e:
             if e.code == 404:
-                return json.dumps({'state': e.code, 
-                    'message': e.reason})
+                return {'state': e.code, 
+                    'message': e.reason}
             elif e.code == 500:
-                return json.dumps({'state': 503, 
-                    'message': "Source host 500 error: " + e.reason})
+                return {'state': 503, 
+                    'message': "Source host 500 error: " + e.reason}
             else:
-                return json.dumps({'state': 500, 
+                return {'state': 500, 
                     'message': "Unhandled source host error: "
-                            + str(e.code) + " " + e.reason})
+                            + str(e.code) + " " + e.reason}
         else:
             # TODO filter for allowed content-types?
             c_type = headers.get_content_type()
@@ -142,12 +123,15 @@ class download_worker(DANE.base_classes.base_worker):
                 # and potentially can just pass entire c_type on then
                 file_type = 'unknown'
 
-            return json.dumps({'state': 200, 
-                'message': 'Success', 
+            r = Result(self.generator, payload={
                 'file_path': file_path,
                 'file_type': file_type, 
                 'Content-Type': c_type,
-                'Content-Length': content_length})
+                'Content-Length': content_length
+                }, api=self.handler)
+            r.save(task._id)
+
+            return {'state': 200, 'message': 'Success'} 
 
 if __name__ == '__main__':
 
