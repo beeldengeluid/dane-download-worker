@@ -9,6 +9,7 @@ import os
 import DANE.base_classes
 from DANE.config import cfg
 from DANE import Result
+from DANE import errors
 
 
 def parseSize(size, units = 
@@ -81,7 +82,7 @@ class download_worker(DANE.base_classes.base_worker):
                     r.save(task._id)
 
                     return {'state': 200, 'message': 'Success'}
-            except KeyError as e:
+            except errors.ResultExistsError, errors.TaskAssignedError:
                 # seems the tasks or results no longer exists
                 # just redownload and get fresh info
                 pass
