@@ -82,7 +82,7 @@ class download_worker(DANE.base_classes.base_worker):
                     r.save(task._id)
 
                     return {'state': 200, 'message': 'Success'}
-            except errors.ResultExistsError, errors.TaskAssignedError:
+            except (errors.ResultExistsError, errors.TaskAssignedError) as e:
                 # seems the tasks or results no longer exists
                 # just redownload and get fresh info
                 pass
