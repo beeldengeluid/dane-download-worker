@@ -10,7 +10,8 @@ import DANE.base_classes
 from DANE.config import cfg
 from DANE import Result
 from DANE import errors
-
+import logging
+from logging.handlers import TimedRotatingFileHandler
 
 def parseSize(size, units = 
         {"B": 1, "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}):
@@ -32,12 +33,39 @@ class download_worker(DANE.base_classes.base_worker):
         super().__init__(queue=self.__queue_name, 
                 binding_key='#.DOWNLOAD', config=config)
 
+        self.logger = self.init_logger(config)
+        self.logger.debug(config)
         self.whitelist = config.DOWNLOADER.WHITELIST
-
         self.threshold = None
         if 'FS_THRESHOLD' in config.DOWNLOADER.keys():
             # in bytes, might only work on Unix
             self.threshold = parseSize(config.DOWNLOADER.FS_THRESHOLD)
+
+    def init_logger(self, config):
+        logger = logging.getLogger('DANE-DOWNLOAD')
+        logger.setLevel(config.LOGGING.LEVEL)
+        # create file handler which logs to file
+        if not os.path.exists(os.path.realpath(config.LOGGING.DIR)):
+            os.makedirs(os.path.realpath(config.LOGGING.DIR), exist_ok=True)
+
+        fh = TimedRotatingFileHandler(os.path.join(
+            os.path.realpath(config.LOGGING.DIR), "DANE-ASR-worker.log"),
+            when='W6', # start new log on sunday
+            backupCount=3)
+        fh.setLevel(config.LOGGING.LEVEL)
+        # create console handler
+        ch = logging.StreamHandler()
+        ch.setLevel(config.LOGGING.LEVEL)
+        # create formatter and add it to the handlers
+        formatter = logging.Formatter(
+                '%(asctime)s - %(levelname)s - %(message)s',
+                "%Y-%m-%d %H:%M:%S")
+        fh.setFormatter(formatter)
+        ch.setFormatter(formatter)
+        # add the handlers to the logger
+        logger.addHandler(fh)
+        logger.addHandler(ch)
+        return logger
 
     def callback(self, task, doc):
         target_url = requote_uri(doc.target['url'])
