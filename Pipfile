@@ -8,3 +8,6 @@ verify_ssl = true
 [packages]
 requests = "*"
 dane = {git = "https://github.com/CLARIAH/DANE.git",ref = "es-index-cfg"}
+elasticsearch = "*"
+yacs = "*"
+pika = "*"
