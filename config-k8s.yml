@@ -19,6 +19,7 @@ ELASTICSEARCH:
     USER: '' # change this for production mode
     PASSWORD: '' # change this for production mode
     SCHEME: 'http'
+    INDEX: 'dane-index-k8s-asr'
 DANE_SERVER:
     TEMP_FOLDER: "/mnt/dane-fs/input-files"
     OUT_FOLDER: "/mnt/dane-fs/output-files" # each worker should put his output in a subfolder of this dir
