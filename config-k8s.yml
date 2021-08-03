@@ -31,3 +31,6 @@ DOWNLOADER:
 LOGGING:
     LEVEL: 'DEBUG'
     DIR: 'logs'
+PATHS:
+    TEMP_FOLDER: "/mnt/dane-fs/input-files"
+    OUT_FOLDER: "/mnt/dane-fs/output-files"
