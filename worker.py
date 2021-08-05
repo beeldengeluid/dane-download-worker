@@ -49,7 +49,7 @@ class download_worker(DANE.base_classes.base_worker):
             os.makedirs(os.path.realpath(config.LOGGING.DIR), exist_ok=True)
 
         fh = TimedRotatingFileHandler(os.path.join(
-            os.path.realpath(config.LOGGING.DIR), "DANE-ASR-worker.log"),
+            os.path.realpath(config.LOGGING.DIR), "DANE-download-worker.log"),
             when='W6', # start new log on sunday
             backupCount=3)
         fh.setLevel(config.LOGGING.LEVEL)
