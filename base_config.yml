@@ -1,3 +1,9 @@
+# Important for understanding DANE configs: https://github.com/CLARIAH/DANE/blob/main/DANE/config.py
+# Note: FIRST the home dir config is applied,
+# THEN the base_config will overwrite anything,
+# THEN the local config.yml
+
+# The base_config.yml is left out of the Docker container, so you need to configure everything in config.yml
 DOWNLOADER:
     FS_THRESHOLD: '10GB'
     WHITELIST:

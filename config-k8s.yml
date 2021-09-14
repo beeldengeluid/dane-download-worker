@@ -1,0 +1,36 @@
+# Important for understanding DANE configs: https://github.com/CLARIAH/DANE/blob/main/DANE/config.py
+
+# Important note:
+# FIRST the home dir config is applied (~/.DANE/config.yml),
+# THEN the base_config.yml will overwrite anything,
+# THEN the local config.yml
+
+#Note: For local testing, copy this file to config.yml (in main dir of this repo)
+RABBITMQ:
+    HOST: 'dane-rabbitmq-api.default.svc.cluster.local' #'kni-gpu-bg01.kantoor.beeldengeluid.nl'
+    PORT: 5672
+    EXCHANGE: 'DANE-exchange'
+    RESPONSE_QUEUE: 'DANE-response-queue'
+    USER: 'guest' # change this for production mode
+    PASSWORD: 'guest' # change this for production mode
+ELASTICSEARCH:
+    HOST: ['elasticsearch']
+    PORT: 9200
+    USER: '' # change this for production mode
+    PASSWORD: '' # change this for production mode
+    SCHEME: 'http'
+    INDEX: 'dane-index-k8s-asr'
+DANE_SERVER:
+    TEMP_FOLDER: "/mnt/dane-fs/input-files"
+    OUT_FOLDER: "/mnt/dane-fs/output-files" # each worker should put his output in a subfolder of this dir
+DOWNLOADER:
+    FS_THRESHOLD: '10GB'
+    WHITELIST:
+        - 'openbeelden.nl'
+        - 'videohosting.beng.nl'
+LOGGING:
+    LEVEL: 'DEBUG'
+    DIR: 'logs'
+PATHS:
+    TEMP_FOLDER: "/mnt/dane-fs/input-files"
+    OUT_FOLDER: "/mnt/dane-fs/output-files"
