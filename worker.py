@@ -1,16 +1,18 @@
 import json
 import urllib.request as req
 from urllib.error import HTTPError
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, unquote
 from requests.utils import requote_uri
 import shutil
 import os
-
+import unicodedata
 import DANE.base_classes
 from DANE.config import cfg
 from DANE import Result
 from DANE import errors
 import logging
+import string
+import uuid
 from logging.handlers import TimedRotatingFileHandler
 
 def parse_file_size(size, units = {"B": 1, "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}):
@@ -20,6 +22,8 @@ def parse_file_size(size, units = {"B": 1, "KB": 10**3, "MB": 10**6, "GB": 10**9
 
     number, unit = [string.strip() for string in size.upper().split()]
     return int(float(number)*units[unit])
+
+valid_filename_chars = "-_. {}{}".format(string.ascii_letters, string.digits)
 
 class download_worker(DANE.base_classes.base_worker):
     # we specify a queue name because every worker of this type should 
@@ -64,18 +68,8 @@ class download_worker(DANE.base_classes.base_worker):
         logger.addHandler(ch)
         return logger
 
-    def download(self, url):
-        response = requests.get(url)
-        file_path = self.url_to_safe_filename(url)
-        self.logger.info('downloading to this file: {}'.format(file_path))
-        if response.ok and file_path:
-            with open(file_path, "wb+") as f:
-                f.write(response.content)
-        else:
-            self.logger.warning("Failed to download {}".format(url))
-
     # makes sure any URL is downloaded to a file with an OS friendly file name (that still is human readable)
-    def url_to_safe_filename(self, url, whitelist=valid_filename_chars, replace=' '):
+    def __url_to_safe_filename(self, url, whitelist=valid_filename_chars, replace=' ', char_limit=255):
         # grab the url path
         url_path = urlparse(url).path
 
@@ -138,7 +132,7 @@ class download_worker(DANE.base_classes.base_worker):
                 return False
         return True
 
-    def __check_whitelist(self, target_url, whiteList):
+    def __check_whitelist(self, target_url, whitelist):
         parse = urlparse(target_url)
         if parse.netloc not in whitelist:
             self.logger.warning('Requested URL Not in whitelist: {}'.format('; '.join(whitelist)))
@@ -170,11 +164,11 @@ class download_worker(DANE.base_classes.base_worker):
             return {'state': 500, 'message': "Non existing TEMP_FOLDER, cannot handle request"}
 
         # check if the file fits the download threshhold
-        if not self.__check_download_threshold(self.threshold, download_dir)
+        if not self.__check_download_threshold(self.threshold, download_dir):
             self.logger.error('Insufficient disk space; bytes free: {}'.format(bytes_free))
             raise DANE.errors.RefuseJobException('Insufficient disk space')
 
-        download_filename = self.url_to_safe_filename(target_url)
+        download_filename = self.__url_to_safe_filename(target_url)
         download_file_path = os.path.join(download_dir, download_filename)
 
         # maybe the file was already downloaded
