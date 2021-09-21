@@ -70,6 +70,9 @@ class download_worker(DANE.base_classes.base_worker):
 
     # makes sure any URL is downloaded to a file with an OS friendly file name (that still is human readable)
     def __url_to_safe_filename(self, url, whitelist=valid_filename_chars, replace=' ', char_limit=255):
+        # ; in the url is terrible, since it cuts off everything after the ; when running urlparse
+        url = url.replace(';', '')
+
         # grab the url path
         url_path = urlparse(url).path
 
