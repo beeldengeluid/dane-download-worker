@@ -145,7 +145,7 @@ class download_worker(DANE.base_classes.base_worker):
     def __determine_download_dir(self, doc, task):
         if 'PATHS' not in task.args.keys() or 'TEMP_FOLDER' not in task.args['PATHS'].keys():
             task.args['PATHS'] = task.args.get('PATHS', {})
-            task.args['PATHS'].update(self.getDirs(doc))
+            task.args['PATHS'].update(self.getDirs(doc)) # returns this "chunked" dir based on the doc id
         download_dir = task.args['PATHS']['TEMP_FOLDER']
         return download_dir if os.path.exists(download_dir) else None
 
