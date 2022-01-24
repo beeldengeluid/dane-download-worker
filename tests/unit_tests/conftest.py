@@ -11,4 +11,4 @@ def config():
 
 @pytest.fixture(scope="session")
 def environment_variables():  # TODO migrate secrets from config.yml to env
-    os.environ["BG_DL_PROXY_UNIT_TESTING"] = "true"
+    os.environ["DW_DOWNLOAD_UNIT_TESTING"] = "true"

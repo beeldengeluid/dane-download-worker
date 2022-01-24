@@ -24,6 +24,7 @@ def validate_config(config, validate_file_paths=True):
     # check the DANE.cfg (supplied by config.yml)
     try:
         # rabbitmq settings
+        assert config.RABBITMQ, "RABBITMQ"
         assert __check_setting(config.RABBITMQ.HOST, str), "RABBITMQ.HOST"
         assert __check_setting(config.RABBITMQ.PORT, int), "RABBITMQ.PORT"
         assert __check_setting(config.RABBITMQ.EXCHANGE, str), "RABBITMQ.EXCHANGE"
@@ -34,6 +35,7 @@ def validate_config(config, validate_file_paths=True):
         assert __check_setting(config.RABBITMQ.PASSWORD, str), "RABBITMQ.PASSWORD"
 
         # Elasticsearch settings
+        assert config.ELASTICSEARCH, "ELASTICSEARCH"
         assert __check_setting(config.ELASTICSEARCH.HOST, list), "ELASTICSEARCH.HOST"
         assert (
             len(config.ELASTICSEARCH.HOST) == 1
@@ -50,8 +52,20 @@ def validate_config(config, validate_file_paths=True):
         assert __check_setting(config.ELASTICSEARCH.SCHEME, str), "ELASTICSEARCH.SCHEME"
         assert __check_setting(config.ELASTICSEARCH.INDEX, str), "ELASTICSEARCH.INDEX"
 
-        # This worker
+        # logging
+        assert config.LOGGING, "LOGGING"
+        assert __check_setting(config.LOGGING.LEVEL, str), "LOGGING.LEVEL"
+        assert __check_log_level(config.LOGGING.LEVEL), "Invalid LOGGING.LEVEL defined"
+        assert __check_setting(config.LOGGING.DIR, str), "LOGGING.DIR"
+        parent_dirs_to_check.append(config.LOGGING.DIR)
 
+        # DANE python lib settings
+        assert config.PATHS, "PATHS"
+        assert __check_setting(config.PATHS.TEMP_FOLDER, str), "PATHS.TEMP_FOLDER"
+        assert __check_setting(config.PATHS.OUT_FOLDER, str), "PATHS.OUT_FOLDER"
+
+        # Settings for this DANE worker
+        assert config.DOWNLOADER, "DOWNLOADER"
         assert __check_setting(
             config.DOWNLOADER.FS_THRESHOLD, str, True
         ), "DOWNLOADER.FS_THRESHOLD"
@@ -62,16 +76,6 @@ def validate_config(config, validate_file_paths=True):
             assert validators.domain(
                 domain
             ), f"Invalid domain in DOWNLOADER.WHITELIST: {domain}"
-
-        # logging
-        assert __check_setting(config.LOGGING.LEVEL, str), "LOGGING.LEVEL"
-        assert __check_log_level(config.LOGGING.LEVEL), "Invalid LOGGING.LEVEL defined"
-        assert __check_setting(config.LOGGING.DIR, str), "LOGGING.DIR"
-        parent_dirs_to_check.append(config.LOGGING.DIR)
-
-        # DANE python lib settings
-        assert __check_setting(config.PATHS.TEMP_FOLDER, str), "PATHS.TEMP_FOLDER"
-        assert __check_setting(config.PATHS.OUT_FOLDER, str), "PATHS.OUT_FOLDER"
 
         # validate file paths (not while unit testing)
         if validate_file_paths:
@@ -86,7 +90,7 @@ def validate_config(config, validate_file_paths=True):
 
 
 def __validate_environment_variables():
-    # self.UNIT_TESTING = os.getenv('BG_DL_PROXY_UNIT_TESTING', False)
+    # self.UNIT_TESTING = os.getenv('DW_DOWNLOAD_UNIT_TESTING', False)
     try:
         assert True
     except AssertionError as e:
