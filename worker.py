@@ -166,10 +166,10 @@ class DownloadWorker(DANE.base_classes.base_worker):
 
             content_length = int(headers.get('Content-Length', failobj=-1))
             if content_length > -1 and out_size != content_length:
-                self.logger.warning('Download incomplete for: {}'.format(fn))
+                self.logger.warning('Download incomplete for: {}'.format(download_filename))
                 return json.dumps({
                     'state': 502,
-                    'message': "Received incomplete file: {} ({} out of {} bytes)".format(fn, out_size, content_length)
+                    'message': "Received incomplete file: {} ({} out of {} bytes)".format(download_filename, out_size, content_length)
                 })
         except HTTPError as e:
             if e.code == 404:
