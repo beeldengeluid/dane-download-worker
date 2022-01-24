@@ -12,6 +12,8 @@ Important note on how DANE builds up it's config (which is supplied to validate_
     THEN the local base_config.yml will overwrite anything specified
     THEN the local config.yml will overwrite anything specified there
 """
+
+
 def validate_config(config, validate_file_paths=True):
     try:
         __validate_environment_variables()
