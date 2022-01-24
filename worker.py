@@ -10,63 +10,42 @@ import DANE.base_classes
 from DANE.config import cfg
 from DANE import Result
 from DANE import errors
-import logging
 import string
 import uuid
-from logging.handlers import TimedRotatingFileHandler
+from base_util import init_logger, validate_config
 
 def parse_file_size(size, units = {"B": 1, "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}):
-    if not ' ' in size:
+    if " " not in size:
         # no space in size, assume last 2 char are unit
         size = size[:-2] + ' ' + size[-2:]
 
-    number, unit = [string.strip() for string in size.upper().split()]
+    number, unit = [s.strip() for s in size.upper().split()]
     return int(float(number)*units[unit])
 
 valid_filename_chars = "-_. {}{}".format(string.ascii_letters, string.digits)
 
-class download_worker(DANE.base_classes.base_worker):
+class DownloadWorker(DANE.base_classes.base_worker):
     # we specify a queue name because every worker of this type should 
     # listen to the same queue
     __queue_name = 'DOWNLOAD'
 
     def __init__(self, config):
-        super().__init__(queue=self.__queue_name, 
-                binding_key='#.DOWNLOAD', config=config)
-
-        self.logger = self.init_logger(config)
+        self.logger = init_logger(config)
         self.logger.debug(config)
+
+        self.UNIT_TESTING = os.getenv("BG_DL_PROXY_UNIT_TESTING", False)
+
+        if not validate_config(config, not self.UNIT_TESTING):
+            self.logger.error("Invalid config, quitting")
+            quit()
+
         self.whitelist = config.DOWNLOADER.WHITELIST
         self.threshold = None
         if 'FS_THRESHOLD' in config.DOWNLOADER.keys():
             # in bytes, might only work on Unix
             self.threshold = parse_file_size(config.DOWNLOADER.FS_THRESHOLD)
 
-    def init_logger(self, config):
-        logger = logging.getLogger('DANE-DOWNLOAD')
-        logger.setLevel(config.LOGGING.LEVEL)
-        # create file handler which logs to file
-        if not os.path.exists(os.path.realpath(config.LOGGING.DIR)):
-            os.makedirs(os.path.realpath(config.LOGGING.DIR), exist_ok=True)
-
-        fh = TimedRotatingFileHandler(os.path.join(
-            os.path.realpath(config.LOGGING.DIR), "DANE-download-worker.log"),
-            when='W6', # start new log on sunday
-            backupCount=3)
-        fh.setLevel(config.LOGGING.LEVEL)
-        # create console handler
-        ch = logging.StreamHandler()
-        ch.setLevel(config.LOGGING.LEVEL)
-        # create formatter and add it to the handlers
-        formatter = logging.Formatter(
-                '%(asctime)s - %(levelname)s - %(message)s',
-                "%Y-%m-%d %H:%M:%S")
-        fh.setFormatter(formatter)
-        ch.setFormatter(formatter)
-        # add the handlers to the logger
-        logger.addHandler(fh)
-        logger.addHandler(ch)
-        return logger
+        super().__init__(queue=self.__queue_name, binding_key='#.DOWNLOAD', config=config)
 
     # makes sure any URL is downloaded to a file with an OS friendly file name (that still is human readable)
     def __url_to_safe_filename(self, url, whitelist=valid_filename_chars, replace=' ', char_limit=255):
@@ -168,7 +147,7 @@ class download_worker(DANE.base_classes.base_worker):
 
         # check if the file fits the download threshhold
         if not self.__check_download_threshold(self.threshold, download_dir):
-            self.logger.error('Insufficient disk space; bytes free: {}'.format(bytes_free))
+            self.logger.error('Insufficient disk space')
             raise DANE.errors.RefuseJobException('Insufficient disk space')
 
         download_filename = self.__url_to_safe_filename(target_url)
@@ -225,7 +204,7 @@ class download_worker(DANE.base_classes.base_worker):
 
 if __name__ == '__main__':
 
-    dlw = download_worker(cfg)
+    dlw = DownloadWorker(cfg)
 
     print(' # Initialising worker. Ctrl+C to exit')
     try: 

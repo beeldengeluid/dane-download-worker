@@ -1,0 +1,4 @@
+#!/bin/sh
+
+#copy this script to .git/hooks/pre-commit
+tests/unit-test.sh true
