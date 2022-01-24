@@ -38,7 +38,7 @@ class DownloadWorker(DANE.base_classes.base_worker):
         self.logger = init_logger(config)
         self.logger.debug(config)
 
-        self.UNIT_TESTING = os.getenv("BG_DL_PROXY_UNIT_TESTING", False)
+        self.UNIT_TESTING = os.getenv("DW_DOWNLOAD_UNIT_TESTING", False)
 
         if not validate_config(config, not self.UNIT_TESTING):
             self.logger.error("Invalid config, quitting")
