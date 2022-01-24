@@ -2,3 +2,6 @@ DS_Store
 *.pyc
 *.swp
 config.yml
+.coverage
+mount
+logs
