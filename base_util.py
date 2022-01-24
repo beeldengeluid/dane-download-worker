@@ -45,10 +45,16 @@ def validate_config(config, validate_file_paths=True):
 
         # This worker
 
-        assert __check_setting(config.DOWNLOADER.FS_THRESHOLD, str, True), "DOWNLOADER.FS_THRESHOLD"
-        assert __check_setting(config.DOWNLOADER.WHITELIST, list), "DOWNLOADER.WHITELIST"
+        assert __check_setting(
+            config.DOWNLOADER.FS_THRESHOLD, str, True
+        ), "DOWNLOADER.FS_THRESHOLD"
+        assert __check_setting(
+            config.DOWNLOADER.WHITELIST, list
+        ), "DOWNLOADER.WHITELIST"
         for domain in config.DOWNLOADER.WHITELIST:
-            assert validators.domain(domain), f"Invalid domain in DOWNLOADER.WHITELIST: {domain}"
+            assert validators.domain(
+                domain
+            ), f"Invalid domain in DOWNLOADER.WHITELIST: {domain}"
 
         # logging
         assert __check_setting(config.LOGGING.LEVEL, str), "LOGGING.LEVEL"
@@ -116,24 +122,25 @@ def __validate_parent_dirs(paths: list) -> bool:
 
 
 def init_logger(config):
-    logger = logging.getLogger('DANE-DOWNLOAD')
+    logger = logging.getLogger("DANE-DOWNLOAD")
     logger.setLevel(config.LOGGING.LEVEL)
     # create file handler which logs to file
     if not os.path.exists(os.path.realpath(config.LOGGING.DIR)):
         os.makedirs(os.path.realpath(config.LOGGING.DIR), exist_ok=True)
 
-    fh = TimedRotatingFileHandler(os.path.join(
-        os.path.realpath(config.LOGGING.DIR), "DANE-download-worker.log"),
-        when='W6', # start new log on sunday
-        backupCount=3)
+    fh = TimedRotatingFileHandler(
+        os.path.join(os.path.realpath(config.LOGGING.DIR), "DANE-download-worker.log"),
+        when="W6",  # start new log on sunday
+        backupCount=3,
+    )
     fh.setLevel(config.LOGGING.LEVEL)
     # create console handler
     ch = logging.StreamHandler()
     ch.setLevel(config.LOGGING.LEVEL)
     # create formatter and add it to the handlers
     formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(message)s',
-            "%Y-%m-%d %H:%M:%S")
+        "%(asctime)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S"
+    )
     fh.setFormatter(formatter)
     ch.setFormatter(formatter)
     # add the handlers to the logger
