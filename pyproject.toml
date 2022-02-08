@@ -1,8 +1,7 @@
-# https://stackoverflow.com/questions/64150719/how-to-write-a-minimally-working-pyproject-toml-file-that-can-install-packages
 [project]
 name = "dane-download-worker"
 version = "0.9.0"
-description = ""
+description = "Basic \"DANE worker\" that downloads input data via HTTP(s) URLs for further processing by other DANE workers. Depends on DANE-server"
 authors = [
     "Nanne van Noord"
     "Jaap Blom"
