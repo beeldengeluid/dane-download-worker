@@ -60,7 +60,7 @@ def url_to_safe_filename(url, whitelist=VALID_FILENAME_CHARS, replace=" ", char_
     # keep only whitelisted chars
     cleaned_filename = "".join(c for c in cleaned_filename if c in whitelist)
     if len(cleaned_filename) > char_limit:
-        self.logger.warning(
+        print(
             "Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(
                 char_limit
             )
