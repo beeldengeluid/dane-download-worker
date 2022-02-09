@@ -1,32 +1,15 @@
 import json
 import urllib.request as req
+from urllib.parse import urlparse
 from urllib.error import HTTPError
-from urllib.parse import urlparse, unquote
 from requests.utils import requote_uri
 import shutil
 import os
-import unicodedata
 import DANE.base_classes
 from DANE.config import cfg
 from DANE import Result
 from DANE import errors
-import string
-import uuid
-from base_util import init_logger, validate_config
-
-
-def parse_file_size(
-    size, units={"B": 1, "KB": 10 ** 3, "MB": 10 ** 6, "GB": 10 ** 9, "TB": 10 ** 12}
-):
-    if " " not in size:
-        # no space in size, assume last 2 char are unit
-        size = size[:-2] + " " + size[-2:]
-
-    number, unit = [s.strip() for s in size.upper().split()]
-    return int(float(number) * units[unit])
-
-
-valid_filename_chars = "-_. {}{}".format(string.ascii_letters, string.digits)
+from base_util import init_logger, validate_config, parse_file_size, url_to_safe_filename
 
 
 class DownloadWorker(DANE.base_classes.base_worker):
@@ -53,44 +36,6 @@ class DownloadWorker(DANE.base_classes.base_worker):
         super().__init__(
             queue=self.__queue_name, binding_key="#.DOWNLOAD", config=config
         )
-
-    # makes sure any URL is downloaded to a file with an OS friendly file name (that still is human readable)
-    def __url_to_safe_filename(
-        self, url, whitelist=valid_filename_chars, replace=" ", char_limit=255
-    ):
-        # ; in the url is terrible, since it cuts off everything after the ; when running urlparse
-        url = url.replace(";", "")
-
-        # grab the url path
-        url_path = urlparse(url).path
-
-        # get the file/dir name from the URL (if any)
-        url_file_name = os.path.basename(url_path)
-
-        # also make sure to get rid of the URL encoding
-        filename = unquote(url_file_name if url_file_name != "" else url_path)
-
-        # if both the url_path and url_file_name are empty the filename will be meaningless, so then assign a random UUID
-        filename = str(uuid.uuid4()) if filename in ["", "/"] else filename
-
-        # replace spaces (or anything else passed in the replace param) with underscores
-        for r in replace:
-            filename = filename.replace(r, "_")
-
-        # keep only valid ascii chars
-        cleaned_filename = (
-            unicodedata.normalize("NFKD", filename).encode("ASCII", "ignore").decode()
-        )
-
-        # keep only whitelisted chars
-        cleaned_filename = "".join(c for c in cleaned_filename if c in whitelist)
-        if len(cleaned_filename) > char_limit:
-            self.logger.warning(
-                "Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(
-                    char_limit
-                )
-            )
-        return cleaned_filename[:char_limit]
 
     def __requires_download(self, doc, task, download_file_path):
         if os.path.exists(download_file_path):
@@ -178,7 +123,7 @@ class DownloadWorker(DANE.base_classes.base_worker):
             self.logger.error("Insufficient disk space")
             raise DANE.errors.RefuseJobException("Insufficient disk space")
 
-        download_filename = self.__url_to_safe_filename(target_url)
+        download_filename = url_to_safe_filename(target_url)
         download_file_path = os.path.join(download_dir, download_filename)
 
         # maybe the file was already downloaded
