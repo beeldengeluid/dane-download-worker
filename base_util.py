@@ -27,7 +27,7 @@ def parse_file_size(size):
     except KeyError:  # invalid unit was supplied
         return -1
 
-
+"""
 # makes sure any URL is downloaded to a file with an OS friendly file name (that still is human readable)
 def url_to_safe_filename(url, whitelist=VALID_FILENAME_CHARS, replace=" ", char_limit=255):
     if type(url) != str:
@@ -66,6 +66,67 @@ def url_to_safe_filename(url, whitelist=VALID_FILENAME_CHARS, replace=" ", char_
             )
         )
     return cleaned_filename[:char_limit]
+"""
+
+def url_to_safe_filename(url: str) -> str:
+    prepped_url = preprocess_url(url)
+    if prepped_url is None:
+        return None
+
+    unsafe_fn = extract_filename_from_url(prepped_url)
+
+    return to_safe_filename(unsafe_fn)
+
+
+def preprocess_url(url: str) -> str:
+    if type(url) != str:
+        return None
+
+    # ; in the url is terrible, since it cuts off everything after the ; when running urlparse
+    url = url.replace(";", "")
+
+    # make sure to get rid of the URL encoding
+    return unquote(url)
+
+
+def extract_filename_from_url(url: str) -> str:
+    if type(url) != str:
+        return None
+
+    # grab the url path
+    url_path = urlparse(url).path
+    if url_path.rfind("/") == len(url_path) -1:
+        url_path = url_path[:-1]
+    url_host = urlparse(url).netloc
+
+    # get the file/dir name from the URL (if any)
+    fn = os.path.basename(url_path)
+
+    # if the url_path is empty, the file name is meaningless, so return a string based on the url_host
+    return f"{url_host.replace('.', '_')}__{str(uuid.uuid4())}" if fn in ["", "/"] else fn
+
+
+def to_safe_filename(fn : str, whitelist : list=VALID_FILENAME_CHARS, char_limit: int=255) -> str:
+    if type(fn) != str:
+        return None
+
+    # replace spaces with underscore (spaces in filenames aren't nice)
+    fn = fn.replace(" ", "_")
+
+    safe_fn = (
+        unicodedata.normalize("NFKD", fn).encode("ASCII", "ignore").decode()
+    )
+
+    # keep only whitelisted chars
+    safe_fn = "".join(c for c in safe_fn if c in whitelist)
+
+    if len(safe_fn) > char_limit:
+        print(
+            "Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(
+                char_limit
+            )
+        )
+    return safe_fn[:char_limit]
 
 
 def validate_config(config, validate_file_paths=True):
