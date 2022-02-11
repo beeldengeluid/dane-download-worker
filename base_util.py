@@ -27,6 +27,7 @@ def parse_file_size(size):
     except KeyError:  # invalid unit was supplied
         return -1
 
+
 """
 # makes sure any URL is downloaded to a file with an OS friendly file name (that still is human readable)
 def url_to_safe_filename(url, whitelist=VALID_FILENAME_CHARS, replace=" ", char_limit=255):
@@ -96,7 +97,7 @@ def extract_filename_from_url(url: str) -> str:
 
     # grab the url path
     url_path = urlparse(url).path
-    if url_path.rfind("/") == len(url_path) -1:
+    if url_path.rfind("/") == len(url_path) - 1:
         url_path = url_path[:-1]
     url_host = urlparse(url).netloc
 
@@ -104,19 +105,21 @@ def extract_filename_from_url(url: str) -> str:
     fn = os.path.basename(url_path)
 
     # if the url_path is empty, the file name is meaningless, so return a string based on the url_host
-    return f"{url_host.replace('.', '_')}__{str(uuid.uuid4())}" if fn in ["", "/"] else fn
+    return (
+        f"{url_host.replace('.', '_')}__{str(uuid.uuid4())}" if fn in ["", "/"] else fn
+    )
 
 
-def to_safe_filename(fn : str, whitelist : list=VALID_FILENAME_CHARS, char_limit: int=255) -> str:
+def to_safe_filename(
+    fn: str, whitelist: list = VALID_FILENAME_CHARS, char_limit: int = 255
+) -> str:
     if type(fn) != str:
         return None
 
     # replace spaces with underscore (spaces in filenames aren't nice)
     fn = fn.replace(" ", "_")
 
-    safe_fn = (
-        unicodedata.normalize("NFKD", fn).encode("ASCII", "ignore").decode()
-    )
+    safe_fn = unicodedata.normalize("NFKD", fn).encode("ASCII", "ignore").decode()
 
     # keep only whitelisted chars
     safe_fn = "".join(c for c in safe_fn if c in whitelist)

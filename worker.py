@@ -9,7 +9,12 @@ import DANE.base_classes
 from DANE.config import cfg
 from DANE import Result
 from DANE import errors
-from base_util import init_logger, validate_config, parse_file_size, url_to_safe_filename
+from base_util import (
+    init_logger,
+    validate_config,
+    parse_file_size,
+    url_to_safe_filename,
+)
 
 
 class DownloadWorker(DANE.base_classes.base_worker):
@@ -44,13 +49,13 @@ class DownloadWorker(DANE.base_classes.base_worker):
             return self._save_prior_download_result(doc, task) is False
         return True
 
-    def _get_prior_download_results(self, doc_id: str) -> list:  # list with Result objects
+    def _get_prior_download_results(
+        self, doc_id: str
+    ) -> list:  # list with Result objects
         return self.handler.searchResult(doc_id, "DOWNLOAD")
 
     def _copy_result(self, result: Result) -> Result:
-        return Result(
-            self.generator, payload=result.payload, api=self.handler
-        )
+        return Result(self.generator, payload=result.payload, api=self.handler)
 
     # try to copy the DANE Result for a possibly earlier download
     def _save_prior_download_result(self, doc, task):
