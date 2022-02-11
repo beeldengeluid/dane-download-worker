@@ -80,10 +80,13 @@ class DownloadWorker(DANE.base_classes.base_worker):
             )
         return False
 
+    def _get_bytes_free(self, download_dir: str) -> int:
+        disk_stats = os.statvfs(download_dir)
+        return disk_stats.f_frsize * disk_stats.f_bfree
+
     def _check_download_threshold(self, threshold, download_dir):
         if threshold is not None:
-            disk_stats = os.statvfs(download_dir)
-            bytes_free = disk_stats.f_frsize * disk_stats.f_bfree
+            bytes_free = self._get_bytes_free(download_dir)
             if bytes_free <= threshold:
                 return False
         return True

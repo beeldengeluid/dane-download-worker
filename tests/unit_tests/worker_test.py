@@ -7,7 +7,8 @@ from DANE import Result, Document, Task
 # from DANE import errors
 
 
-DUMMY_FILE_PATH = "path/to/donwload/file.mp3"
+DUMMY_DOWNLOAD_DIR = "/mnt/dane-fs/output-files"
+DUMMY_FILE_PATH = "path/to/download/file.mp3"
 DUMMY_DOC = Document(
     {
         "id": "dummy_id_12345",
@@ -98,5 +99,25 @@ def test_check_whitelist(config, url, whitelist, in_whitelist):
     try:
         w = DownloadWorker(config)
         assert w._check_whitelist(url, whitelist) is in_whitelist
+    finally:
+        unstub()
+
+
+@pytest.mark.parametrize(
+    "threshold, file_within_threshold",
+    [
+        (10 ** 6, True),  # 1MB
+        (10 ** 7 -1, True),  # 10MB minus one byte
+        (10 ** 7, False),  # 10MB is the same as the bytes free, which is not accepted
+        (10 ** 8, False),  # 100MB
+        (10 ** 9, False),  # 1GB
+    ],
+)
+def test_check_download_threshold(config, threshold, file_within_threshold):
+    try:
+        w = DownloadWorker(config)
+        when(w)._get_bytes_free(DUMMY_DOWNLOAD_DIR).thenReturn(10 ** 7)  # 10 MB free
+        assert w._check_download_threshold(threshold, DUMMY_DOWNLOAD_DIR) is file_within_threshold
+        verify(w, times=1)._get_bytes_free(DUMMY_DOWNLOAD_DIR)
     finally:
         unstub()
