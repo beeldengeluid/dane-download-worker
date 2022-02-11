@@ -7,7 +7,7 @@ import shutil
 import os
 import DANE.base_classes
 from DANE.config import cfg
-from DANE import Result
+from DANE import Result, Task, Document
 from DANE import errors
 from base_util import (
     init_logger,
@@ -58,10 +58,10 @@ class DownloadWorker(DANE.base_classes.base_worker):
         return Result(self.generator, payload=result.payload, api=self.handler)
 
     # try to copy the DANE Result for a possibly earlier download
-    def _save_prior_download_result(self, doc, task):
+    def _save_prior_download_result(self, doc: Document, task: Task) -> bool:
         try:
             results = self._get_prior_download_results(doc._id)
-            if len(results) > 0:
+            if results and len(results) > 0:
                 # arbitrarly choose the first one to copy, perhaps should have some
                 # timestamp mechanism..
                 r = self._copy_result(results[0])
@@ -84,14 +84,14 @@ class DownloadWorker(DANE.base_classes.base_worker):
         disk_stats = os.statvfs(download_dir)
         return disk_stats.f_frsize * disk_stats.f_bfree
 
-    def _check_download_threshold(self, threshold, download_dir):
+    def _check_download_threshold(self, threshold: int, download_dir: str) -> bool:
         if threshold is not None:
             bytes_free = self._get_bytes_free(download_dir)
             if bytes_free <= threshold:
                 return False
         return True
 
-    def _check_whitelist(self, target_url, whitelist):
+    def _check_whitelist(self, target_url: str, whitelist: list) -> bool:
         parse = urlparse(target_url)
         if parse.netloc not in whitelist:
             self.logger.warning(
@@ -100,7 +100,7 @@ class DownloadWorker(DANE.base_classes.base_worker):
             return False
         return True
 
-    def _determine_download_dir(self, doc, task):
+    def _determine_download_dir(self, doc: Document, task: Task):
         if (
             "PATHS" not in task.args.keys()
             or "TEMP_FOLDER" not in task.args["PATHS"].keys()

@@ -4,7 +4,7 @@ import pytest
 from mockito import unstub, when, verify
 from worker import DownloadWorker
 from DANE import Result, Document, Task
-# from DANE import errors
+from DANE import errors
 
 
 DUMMY_DOWNLOAD_DIR = "/mnt/dane-fs/output-files"
@@ -42,16 +42,35 @@ DUMMY_RESULT = Result.from_json(
 )
 
 
-def test_save_prior_download_result(config):
+@pytest.mark.parametrize(
+    "doc, task, previous_results, save_exception, success",
+    [
+        (DUMMY_DOC, DUMMY_TASK, [DUMMY_RESULT], None, True),
+        (DUMMY_DOC, DUMMY_TASK, [], None, False),
+        (DUMMY_DOC, DUMMY_TASK, None, None, False),
+        (DUMMY_DOC, DUMMY_TASK, [DUMMY_RESULT], errors.ResultExistsError, False),
+        (DUMMY_DOC, DUMMY_TASK, [DUMMY_RESULT], errors.TaskAssignedError, False),
+        (DUMMY_DOC, DUMMY_TASK, [], errors.TaskAssignedError, False),
+        (DUMMY_DOC, DUMMY_TASK, None, errors.TaskAssignedError, False),
+    ],
+)
+def test_save_prior_download_result(
+    config, doc, task, previous_results, save_exception, success
+):
     try:
         w = DownloadWorker(config)
 
-        when(w)._get_prior_download_results(DUMMY_DOC._id).thenReturn([DUMMY_RESULT])
+        when(w)._get_prior_download_results(doc._id).thenReturn(previous_results)
         when(w)._copy_result(DUMMY_RESULT).thenReturn(DUMMY_RESULT)
-        when(Result).save(DUMMY_TASK._id).thenReturn()
-
-        resp = w._save_prior_download_result(DUMMY_DOC, DUMMY_TASK)
-        assert resp is True
+        if save_exception is None:
+            when(Result).save(task._id).thenReturn()
+        else:
+            when(Result).save(task._id).thenRaise(save_exception)
+        resp = w._save_prior_download_result(doc, task)
+        assert resp is success
+        verify(
+            Result, times=1 if previous_results and len(previous_results) > 0 else 0
+        ).save(task._id)
     finally:
         unstub()
 
@@ -91,8 +110,16 @@ def test_requires_download(config, file_exists, prior_result_saved, requires_dow
         ("http://dummy.nl", ["dummy.nl"], True),
         ("http://dummy.nl/path/to", ["dummy.nl"], True),
         ("http://dummy.nl/path/to/file.mp3", ["dummy.nl"], True),
-        ("http://dummy.nl", ["nodummy.nl"], False),  # not in whitelist, so should be False
-        ("http://www.dummy.nl", ["dummy.nl"], False),  # www.DOMAIN is not recognized yet
+        (
+            "http://dummy.nl",
+            ["nodummy.nl"],
+            False,
+        ),  # not in whitelist, so should be False
+        (
+            "http://www.dummy.nl",
+            ["dummy.nl"],
+            False,
+        ),  # www.DOMAIN is not recognized yet
     ],
 )
 def test_check_whitelist(config, url, whitelist, in_whitelist):
@@ -117,7 +144,10 @@ def test_check_download_threshold(config, threshold, file_within_threshold):
     try:
         w = DownloadWorker(config)
         when(w)._get_bytes_free(DUMMY_DOWNLOAD_DIR).thenReturn(10 ** 7)  # 10 MB free
-        assert w._check_download_threshold(threshold, DUMMY_DOWNLOAD_DIR) is file_within_threshold
+        assert (
+            w._check_download_threshold(threshold, DUMMY_DOWNLOAD_DIR)
+            is file_within_threshold
+        )
         verify(w, times=1)._get_bytes_free(DUMMY_DOWNLOAD_DIR)
     finally:
         unstub()
