@@ -107,7 +107,7 @@ def test_check_whitelist(config, url, whitelist, in_whitelist):
     "threshold, file_within_threshold",
     [
         (10 ** 6, True),  # 1MB
-        (10 ** 7 -1, True),  # 10MB minus one byte
+        (10 ** 7 - 1, True),  # 10MB minus one byte
         (10 ** 7, False),  # 10MB is the same as the bytes free, which is not accepted
         (10 ** 8, False),  # 100MB
         (10 ** 9, False),  # 1GB
