@@ -5,7 +5,6 @@ import os
 @pytest.fixture(scope="session")
 def config():
     from DANE.config import cfg
-
     return cfg
 
 
