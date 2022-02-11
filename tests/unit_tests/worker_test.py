@@ -82,3 +82,21 @@ def test_requires_download(config, file_exists, prior_result_saved, requires_dow
         )
     finally:
         unstub()
+
+
+@pytest.mark.parametrize(
+    "url, whitelist, in_whitelist",
+    [
+        ("http://dummy.nl", ["dummy.nl"], True),
+        ("http://dummy.nl/path/to", ["dummy.nl"], True),
+        ("http://dummy.nl/path/to/file.mp3", ["dummy.nl"], True),
+        ("http://dummy.nl", ["nodummy.nl"], False),  # not in whitelist, so should be False
+        ("http://www.dummy.nl", ["dummy.nl"], False),  # www.DOMAIN is not recognized yet
+    ],
+)
+def test_check_whitelist(config, url, whitelist, in_whitelist):
+    try:
+        w = DownloadWorker(config)
+        assert w._check_whitelist(url, whitelist) is in_whitelist
+    finally:
+        unstub()
