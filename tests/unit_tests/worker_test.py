@@ -1,10 +1,11 @@
 import json
 import os
 import pytest
-from mockito import unstub, ANY, when, verify
+from mockito import unstub, when, verify
 from worker import DownloadWorker
 from DANE import Result, Document, Task
-from DANE import errors
+# from DANE import errors
+
 
 DUMMY_FILE_PATH = "path/to/donwload/file.mp3"
 DUMMY_DOC = Document(

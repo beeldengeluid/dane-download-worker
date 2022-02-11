@@ -8,7 +8,6 @@ from base_util import (
     extract_filename_from_url,
     to_safe_filename,
 )
-from worker import DownloadWorker
 
 
 def test_validate_config(config, environment_variables):
