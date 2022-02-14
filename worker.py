@@ -24,7 +24,7 @@ class DownloadWorker(DANE.base_classes.base_worker):
 
     def __init__(self, config):
         self.logger = init_logger(config)
-        self.logger.debug(config)
+        #self.logger.debug(config)
 
         self.UNIT_TESTING = os.getenv("DW_DOWNLOAD_UNIT_TESTING", False)
 
@@ -100,17 +100,17 @@ class DownloadWorker(DANE.base_classes.base_worker):
             return False
         return True
 
-    def _determine_download_dir(self, doc: Document, task: Task):
-        if (
-            "PATHS" not in task.args.keys()
-            or "TEMP_FOLDER" not in task.args["PATHS"].keys()
-        ):
-            task.args["PATHS"] = task.args.get("PATHS", {})
-            task.args["PATHS"].update(
-                self.getDirs(doc)
-            )  # returns this "chunked" dir based on the doc id
-        download_dir = task.args["PATHS"]["TEMP_FOLDER"]
-        return download_dir if os.path.exists(download_dir) else None
+    # returns this "chunked" dir based on the doc id (see DANE.base_classes.getDirs())
+    def _generate_dane_dirs_for_doc(self, doc: Document) -> dict:
+        return self.getDirs(doc).get("TEMP_FOLDER", None)
+
+    def _determine_download_dir(self, doc: Document, task: Task) -> str:
+        download_dir = task.args.get("PATHS", {}).get("TEMP_FOLDER", None)
+
+        # use the provided Task.args.PATHS.TEMP_FOLDER if it exists, otherwise generate a new path
+        if download_dir is None or os.path.exists(download_dir) is False:
+            download_dir = self._generate_dane_dirs_for_doc(doc)
+        return download_dir if download_dir and os.path.exists(download_dir) else None
 
     def callback(self, task, doc):
         # encode the URI, make sure it's safe
