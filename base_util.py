@@ -1,17 +1,92 @@
+import string
+import unicodedata
+import uuid
 import os
+from urllib.parse import urlparse, unquote
 from pathlib import Path
 import logging
 import validators
 from logging.handlers import TimedRotatingFileHandler
 
 
-"""
-Important note on how DANE builds up it's config (which is supplied to validate_config):
+VALID_FILENAME_CHARS = "-_. {}{}".format(string.ascii_letters, string.digits)
+FILE_SIZE_UNITS = {"B": 1, "KB": 10 ** 3, "MB": 10 ** 6, "GB": 10 ** 9, "TB": 10 ** 12}
 
-    FIRST the home dir config is applied (~/.DANE/config.yml),
-    THEN the local base_config.yml will overwrite anything specified
-    THEN the local config.yml will overwrite anything specified there
-"""
+
+def parse_file_size(size):
+    if " " not in size:  # no space in size, assume last 2 char are unit
+        size = f"{size[:-2]} {size[-2:]}"
+
+    number, unit = [s.strip() for s in size.upper().split()]
+    try:
+        return int(float(number) * FILE_SIZE_UNITS[unit])
+    except ValueError:  # unit was longer than 2 chars, so number becomes a string
+        return -1
+    except KeyError:  # invalid unit was supplied
+        return -1
+
+
+def url_to_safe_filename(url: str) -> str:
+    prepped_url = preprocess_url(url)
+    if prepped_url is None:
+        return None
+
+    unsafe_fn = extract_filename_from_url(prepped_url)
+
+    return to_safe_filename(unsafe_fn)
+
+
+def preprocess_url(url: str) -> str:
+    if type(url) != str:
+        return None
+
+    # ; in the url is terrible, since it cuts off everything after the ; when running urlparse
+    url = url.replace(";", "")
+
+    # make sure to get rid of the URL encoding
+    return unquote(url)
+
+
+def extract_filename_from_url(url: str) -> str:
+    if type(url) != str:
+        return None
+
+    # grab the url path
+    url_path = urlparse(url).path
+    if url_path.rfind("/") == len(url_path) - 1:
+        url_path = url_path[:-1]
+    url_host = urlparse(url).netloc
+
+    # get the file/dir name from the URL (if any)
+    fn = os.path.basename(url_path)
+
+    # if the url_path is empty, the file name is meaningless, so return a string based on the url_host
+    return (
+        f"{url_host.replace('.', '_')}__{str(uuid.uuid4())}" if fn in ["", "/"] else fn
+    )
+
+
+def to_safe_filename(
+    fn: str, whitelist: list = VALID_FILENAME_CHARS, char_limit: int = 255
+) -> str:
+    if type(fn) != str:
+        return None
+
+    # replace spaces with underscore (spaces in filenames aren't nice)
+    fn = fn.replace(" ", "_")
+
+    safe_fn = unicodedata.normalize("NFKD", fn).encode("ASCII", "ignore").decode()
+
+    # keep only whitelisted chars
+    safe_fn = "".join(c for c in safe_fn if c in whitelist)
+
+    if len(safe_fn) > char_limit:
+        print(
+            "Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(
+                char_limit
+            )
+        )
+    return safe_fn[:char_limit]
 
 
 def validate_config(config, validate_file_paths=True):
@@ -71,6 +146,10 @@ def validate_config(config, validate_file_paths=True):
         assert __check_setting(
             config.DOWNLOADER.FS_THRESHOLD, str, True
         ), "DOWNLOADER.FS_THRESHOLD"
+        if config.DOWNLOADER.FS_THRESHOLD:
+            assert (
+                parse_file_size(config.DOWNLOADER.FS_THRESHOLD) != -1
+            ), "Invalid file size for DOWNLOADER.FS_THRESHOLD"
         assert __check_setting(
             config.DOWNLOADER.WHITELIST, list
         ), "DOWNLOADER.WHITELIST"

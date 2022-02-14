@@ -1,0 +1,58 @@
+[project]
+name = "dane-download-worker"
+version = "0.9.0"
+description = "Basic \"DANE worker\" that downloads input data via HTTP(s) URLs for further processing by other DANE workers. Depends on DANE-server"
+authors = [
+    "Nanne van Noord",
+    "Jaap Blom"
+]
+license = "https://spdx.org/licenses/GPL-3.0"
+readme = "README.md"
+python = "^3.8"
+homepage = "https://github.com/beeldengeluid/dane-download-worker"
+repository = "https://github.com/beeldengeluid/dane-download-worker"
+documentation = "https://github.com/beeldengeluid/dane-download-worker"
+
+keywords = ["Multimedia processing"]
+
+classifiers = [
+    "Topic :: Multimedia processing"
+]
+
+# Requirements
+[dependencies]
+requests = "*"
+dane = "*"
+elasticsearch = "*"
+yacs = "*"
+pika = "*"
+validators = "*"
+
+[dev-dependencies]
+pytest = "*"
+mockito = "*"
+flake8 = "*"
+pytest-cov = "*"
+
+[build-system]
+requires = [
+    "setuptools >= 35.0.2",
+    "setuptools_scm >= 2.0.0, <3"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 88
+target_version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | build
+    | dist
+  )/
+)
+'''

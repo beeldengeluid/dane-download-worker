@@ -1,23 +1,31 @@
 # Download worker
 
 This is a worker that interacts with [DANE](https://github.com/CLARIAH/DANE) to receive its work. 
-It downloads the file provided in the `source_url` of a job.
+It downloads the file provided in the `target.url` of a DANE document.
 
-## Installation
+Running DANE and any DANE worker is most manageable using Kubernetes, instructions for setting up a DANE Kubernetes cluster will be provided in a separate (Helm) repository.
 
-To install the worker run the following:
+## Local installation (for development)
 
-```
-https://github.com/beeldengeluid/download-worker.git
+Make sure to install [pipenv](https://github.com/pypa/pipenv)
+
+Then to install the worker run the following:
+
+```bash
+git clone https://github.com/beeldengeluid/download-worker.git
 cd download-worker
-pip install -r requirements.txt
+pipenv install
 ```
-
-Subsequently, you should be able to start the worker with `python worker.py`, assuming
-the [configuration](https://dane.readthedocs.io/en/latest/intro.html#configuration) is correct.
 
 ### Configuration
 
-The config file for the worker requires the specification of a whitelist, a list of domains
-that the downloader is permitted to download from. Entries in this list should match the format
-of the `netloc` attribute returned by [`urlparse`](https://docs.python.org/3/library/urllib.parse.html).
+Make sure to copy `config_k8s.yml` to `config.yml` in the main directory of this repo. Study the inline comments to properly configure this DANE worker. Most importantly a valid RabbitMQ server and Elasticsearch cluster is required to get this DANE worker to start-up.
+
+
+### Run
+
+After installing and configuring the DANE worker should start with:
+
+```bash
+python worker.py
+```

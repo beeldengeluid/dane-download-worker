@@ -1,32 +1,20 @@
 import json
 import urllib.request as req
+from urllib.parse import urlparse
 from urllib.error import HTTPError
-from urllib.parse import urlparse, unquote
 from requests.utils import requote_uri
 import shutil
 import os
-import unicodedata
 import DANE.base_classes
 from DANE.config import cfg
-from DANE import Result
+from DANE import Result, Task, Document
 from DANE import errors
-import string
-import uuid
-from base_util import init_logger, validate_config
-
-
-def parse_file_size(
-    size, units={"B": 1, "KB": 10 ** 3, "MB": 10 ** 6, "GB": 10 ** 9, "TB": 10 ** 12}
-):
-    if " " not in size:
-        # no space in size, assume last 2 char are unit
-        size = size[:-2] + " " + size[-2:]
-
-    number, unit = [s.strip() for s in size.upper().split()]
-    return int(float(number) * units[unit])
-
-
-valid_filename_chars = "-_. {}{}".format(string.ascii_letters, string.digits)
+from base_util import (
+    init_logger,
+    validate_config,
+    parse_file_size,
+    url_to_safe_filename,
+)
 
 
 class DownloadWorker(DANE.base_classes.base_worker):
@@ -50,65 +38,33 @@ class DownloadWorker(DANE.base_classes.base_worker):
             # in bytes, might only work on Unix
             self.threshold = parse_file_size(config.DOWNLOADER.FS_THRESHOLD)
 
-        super().__init__(
-            queue=self.__queue_name, binding_key="#.DOWNLOAD", config=config
-        )
-
-    # makes sure any URL is downloaded to a file with an OS friendly file name (that still is human readable)
-    def __url_to_safe_filename(
-        self, url, whitelist=valid_filename_chars, replace=" ", char_limit=255
-    ):
-        # ; in the url is terrible, since it cuts off everything after the ; when running urlparse
-        url = url.replace(";", "")
-
-        # grab the url path
-        url_path = urlparse(url).path
-
-        # get the file/dir name from the URL (if any)
-        url_file_name = os.path.basename(url_path)
-
-        # also make sure to get rid of the URL encoding
-        filename = unquote(url_file_name if url_file_name != "" else url_path)
-
-        # if both the url_path and url_file_name are empty the filename will be meaningless, so then assign a random UUID
-        filename = str(uuid.uuid4()) if filename in ["", "/"] else filename
-
-        # replace spaces (or anything else passed in the replace param) with underscores
-        for r in replace:
-            filename = filename.replace(r, "_")
-
-        # keep only valid ascii chars
-        cleaned_filename = (
-            unicodedata.normalize("NFKD", filename).encode("ASCII", "ignore").decode()
-        )
-
-        # keep only whitelisted chars
-        cleaned_filename = "".join(c for c in cleaned_filename if c in whitelist)
-        if len(cleaned_filename) > char_limit:
-            self.logger.warning(
-                "Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(
-                    char_limit
-                )
+        if self.UNIT_TESTING is False:  # do not connect to DANE while unit testing
+            super().__init__(
+                queue=self.__queue_name, binding_key="#.DOWNLOAD", config=config
             )
-        return cleaned_filename[:char_limit]
 
-    def __requires_download(self, doc, task, download_file_path):
+    def _requires_download(self, doc, task, download_file_path):
         if os.path.exists(download_file_path):
             self.logger.debug("Already downloaded {}".format(download_file_path))
-            return self.__save_prior_download_result(doc, task) is False
+            return self._save_prior_download_result(doc, task) is False
         return True
 
+    def _get_prior_download_results(
+        self, doc_id: str
+    ) -> list:  # list with Result objects
+        return self.handler.searchResult(doc_id, "DOWNLOAD")
+
+    def _copy_result(self, result: Result) -> Result:
+        return Result(self.generator, payload=result.payload, api=self.handler)
+
     # try to copy the DANE Result for a possibly earlier download
-    def __save_prior_download_result(self, doc, task):
+    def _save_prior_download_result(self, doc: Document, task: Task) -> bool:
         try:
-            possibles = self.handler.searchResult(doc._id, "DOWNLOAD")
-            if len(possibles) > 0:
+            results = self._get_prior_download_results(doc._id)
+            if results and len(results) > 0:
                 # arbitrarly choose the first one to copy, perhaps should have some
                 # timestamp mechanism..
-
-                r = Result(
-                    self.generator, payload=possibles[0].payload, api=self.handler
-                )
+                r = self._copy_result(results[0])
                 r.save(task._id)
                 self.logger.debug(
                     "Successfully saved result for task: {}".format(task._id)
@@ -124,15 +80,18 @@ class DownloadWorker(DANE.base_classes.base_worker):
             )
         return False
 
-    def __check_download_threshold(self, threshold, download_dir):
+    def _get_bytes_free(self, download_dir: str) -> int:
+        disk_stats = os.statvfs(download_dir)
+        return disk_stats.f_frsize * disk_stats.f_bfree
+
+    def _check_download_threshold(self, threshold: int, download_dir: str) -> bool:
         if threshold is not None:
-            disk_stats = os.statvfs(download_dir)
-            bytes_free = disk_stats.f_frsize * disk_stats.f_bfree
+            bytes_free = self._get_bytes_free(download_dir)
             if bytes_free <= threshold:
                 return False
         return True
 
-    def __check_whitelist(self, target_url, whitelist):
+    def _check_whitelist(self, target_url: str, whitelist: list) -> bool:
         parse = urlparse(target_url)
         if parse.netloc not in whitelist:
             self.logger.warning(
@@ -141,17 +100,17 @@ class DownloadWorker(DANE.base_classes.base_worker):
             return False
         return True
 
-    def __determine_download_dir(self, doc, task):
-        if (
-            "PATHS" not in task.args.keys()
-            or "TEMP_FOLDER" not in task.args["PATHS"].keys()
-        ):
-            task.args["PATHS"] = task.args.get("PATHS", {})
-            task.args["PATHS"].update(
-                self.getDirs(doc)
-            )  # returns this "chunked" dir based on the doc id
-        download_dir = task.args["PATHS"]["TEMP_FOLDER"]
-        return download_dir if os.path.exists(download_dir) else None
+    # returns this "chunked" dir based on the doc id (see DANE.base_classes.getDirs())
+    def _generate_dane_dirs_for_doc(self, doc: Document) -> dict:
+        return self.getDirs(doc).get("TEMP_FOLDER", None)
+
+    def _determine_download_dir(self, doc: Document, task: Task) -> str:
+        download_dir = task.args.get("PATHS", {}).get("TEMP_FOLDER", None)
+
+        # use the provided Task.args.PATHS.TEMP_FOLDER if it exists, otherwise generate a new path
+        if download_dir is None or os.path.exists(download_dir) is False:
+            download_dir = self._generate_dane_dirs_for_doc(doc)
+        return download_dir if download_dir and os.path.exists(download_dir) else None
 
     def callback(self, task, doc):
         # encode the URI, make sure it's safe
@@ -159,11 +118,11 @@ class DownloadWorker(DANE.base_classes.base_worker):
         self.logger.debug("Download task for: {}".format(target_url))
 
         # check the white list to see if the URL can be downloaded
-        if not self.__check_whitelist(target_url, self.whitelist):
+        if not self._check_whitelist(target_url, self.whitelist):
             return {"state": 403, "message": "Source url not permitted"}
 
         # define the download/temp dir by checking task arguments and default DANE config
-        download_dir = self.__determine_download_dir(doc, task)
+        download_dir = self._determine_download_dir(doc, task)
 
         # only continue if the dir is accessible by this dane-download-worker
         if download_dir is None:
@@ -174,15 +133,15 @@ class DownloadWorker(DANE.base_classes.base_worker):
             }
 
         # check if the file fits the download threshhold
-        if not self.__check_download_threshold(self.threshold, download_dir):
+        if not self._check_download_threshold(self.threshold, download_dir):
             self.logger.error("Insufficient disk space")
             raise DANE.errors.RefuseJobException("Insufficient disk space")
 
-        download_filename = self.__url_to_safe_filename(target_url)
+        download_filename = url_to_safe_filename(target_url)
         download_file_path = os.path.join(download_dir, download_filename)
 
         # maybe the file was already downloaded
-        if not self.__requires_download(doc, task, download_file_path):
+        if not self._requires_download(doc, task, download_file_path):
             return {"state": 200, "message": "Success"}
 
         # now proceed to the actual downloading and saving the download result
