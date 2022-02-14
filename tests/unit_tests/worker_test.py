@@ -26,11 +26,9 @@ DUMMY_DOC = Document.from_json(
         }
     )
 )
-
 DUMMY_TASK = Task.from_json(
     {"key": "DOWNLOAD", "state": 201, "msg": "Queued", "priority": 1}
 )
-
 DUMMY_RESULT = Result.from_json(
     json.dumps(
         {

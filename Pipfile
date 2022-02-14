@@ -10,12 +10,10 @@ flake8 = "*"
 pytest-cov = "*"
 
 [packages]
-requests = "*"
-dane = "*"
-elasticsearch = "*"
-yacs = "*"
-pika = "*"
 validators = "*"
+requests = "*"
+elasticsearch = "==7.17.0"
+dane = "*"
 
 [requires]
 python_version = "3.8"

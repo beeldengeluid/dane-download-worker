@@ -18,8 +18,6 @@ def parse_file_size(size):
         size = f"{size[:-2]} {size[-2:]}"
 
     number, unit = [s.strip() for s in size.upper().split()]
-    print(number)
-    print(unit)
     try:
         return int(float(number) * FILE_SIZE_UNITS[unit])
     except ValueError:  # unit was longer than 2 chars, so number becomes a string
@@ -28,49 +26,6 @@ def parse_file_size(size):
         return -1
 
 
-"""
-# makes sure any URL is downloaded to a file with an OS friendly file name (that still is human readable)
-def url_to_safe_filename(url, whitelist=VALID_FILENAME_CHARS, replace=" ", char_limit=255):
-    if type(url) != str:
-        return None
-
-    # ; in the url is terrible, since it cuts off everything after the ; when running urlparse
-    url = url.replace(";", "")
-
-    # grab the url path
-    url_path = urlparse(url).path
-
-    # get the file/dir name from the URL (if any)
-    url_file_name = os.path.basename(url_path)
-
-    # also make sure to get rid of the URL encoding
-    filename = unquote(url_file_name if url_file_name != "" else url_path)
-
-    # if both the url_path and url_file_name are empty the filename will be meaningless, so then assign a random UUID
-    filename = str(uuid.uuid4()) if filename in ["", "/"] else filename
-
-    # replace spaces (or anything else passed in the replace param) with underscores
-    for r in replace:
-        filename = filename.replace(r, "_")
-
-    # keep only valid ascii chars
-    cleaned_filename = (
-        unicodedata.normalize("NFKD", filename).encode("ASCII", "ignore").decode()
-    )
-
-    # keep only whitelisted chars
-    cleaned_filename = "".join(c for c in cleaned_filename if c in whitelist)
-    if len(cleaned_filename) > char_limit:
-        print(
-            "Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(
-                char_limit
-            )
-        )
-    return cleaned_filename[:char_limit]
-"""
-
-
-# TODO test the new function in DANE!
 def url_to_safe_filename(url: str) -> str:
     prepped_url = preprocess_url(url)
     if prepped_url is None:

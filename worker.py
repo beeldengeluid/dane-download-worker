@@ -24,7 +24,7 @@ class DownloadWorker(DANE.base_classes.base_worker):
 
     def __init__(self, config):
         self.logger = init_logger(config)
-        # self.logger.debug(config)
+        self.logger.debug(config)
 
         self.UNIT_TESTING = os.getenv("DW_DOWNLOAD_UNIT_TESTING", False)
 
