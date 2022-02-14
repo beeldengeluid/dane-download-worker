@@ -11,21 +11,18 @@ DUMMY_DOWNLOAD_DIR = "/mnt/dane-fs/output-files"
 DUMMY_FILE_PATH = "path/to/download/file.mp3"
 DUMMY_DANE_DIRS = {
     "TEMP_FOLDER": "/mnt/dane-fs/input-dir",
-    "OUT_FOLDER": "/mnt/dane-fs/output-dir"
+    "OUT_FOLDER": "/mnt/dane-fs/output-dir",
 }
 DUMMY_DOC = Document.from_json(
     json.dumps(
         {
-            "target" : {
+            "target": {
                 "id": "dummy_id_12345",
                 "url": "http://dummy-url.com/dummy.mp3",
                 "type": "Video",
             },
-            "creator" : {
-                "id": "UNIT TEST",
-                "type": "Organization"
-            },
-            "_id" : "dummy-uuid-12345-43214"
+            "creator": {"id": "UNIT TEST", "type": "Organization"},
+            "_id": "dummy-uuid-12345-43214",
         }
     )
 )
@@ -82,7 +79,9 @@ def test_save_prior_download_result(
         assert resp is success
         verify(w, times=1)._get_prior_download_results(doc._id)
 
-        num_calls_with_prior_results = 1 if previous_results and len(previous_results) > 0 else 0
+        num_calls_with_prior_results = (
+            1 if previous_results and len(previous_results) > 0 else 0
+        )
         verify(Result, times=num_calls_with_prior_results).save(task._id)
         verify(w, times=num_calls_with_prior_results)._copy_result(DUMMY_RESULT)
     finally:
@@ -149,16 +148,24 @@ def test_check_whitelist(config, url, whitelist, in_whitelist):
     [  # 10MB free disk for most examples
         (10 ** 6, True, 10 ** 7),  # 1MB
         (10 ** 7 - 1, True, 10 ** 7),  # 10MB minus one byte
-        (10 ** 7, False, 10 ** 7),  # 10MB is the same as the bytes free, which is not accepted
+        (
+            10 ** 7,
+            False,
+            10 ** 7,
+        ),  # 10MB is the same as the bytes free, which is not accepted
         (10 ** 8, False, 10 ** 7),  # 100MB
         (10 ** 9, False, 10 ** 7),  # 1GB
         (10 ** 9, True, 10 ** 10),  # 1GB (now 10GB free)
     ],
 )
-def test_check_download_threshold(config, threshold, file_within_threshold, free_disk_space):
+def test_check_download_threshold(
+    config, threshold, file_within_threshold, free_disk_space
+):
     try:
         w = DownloadWorker(config)
-        when(w)._get_bytes_free(DUMMY_DOWNLOAD_DIR).thenReturn(free_disk_space)  # 10 MB free
+        when(w)._get_bytes_free(DUMMY_DOWNLOAD_DIR).thenReturn(
+            free_disk_space
+        )  # 10 MB free
         assert (
             w._check_download_threshold(threshold, DUMMY_DOWNLOAD_DIR)
             is file_within_threshold
@@ -180,12 +187,20 @@ def test_determine_download_dir(config, doc, task, download_path_exists):
     try:
         # this part is done by DANE.base_classes.getDirs(), recreate it here for transparancy
         dane_dirs = {**DUMMY_DANE_DIRS}
-        chunks = os.path.join(*[doc._id[i:2+i] for i in range(0, min(len(doc._id),6), 2)])
-        dane_dirs["TEMP_FOLDER"] = os.path.join(DUMMY_DANE_DIRS["TEMP_FOLDER"], chunks, doc._id)
-        dane_dirs["OUT_FOLDER"] = os.path.join(DUMMY_DANE_DIRS["OUT_FOLDER"], chunks, doc._id)
+        chunks = os.path.join(
+            *[doc._id[i : 2 + i] for i in range(0, min(len(doc._id), 6), 2)]
+        )
+        dane_dirs["TEMP_FOLDER"] = os.path.join(
+            DUMMY_DANE_DIRS["TEMP_FOLDER"], chunks, doc._id
+        )
+        dane_dirs["OUT_FOLDER"] = os.path.join(
+            DUMMY_DANE_DIRS["OUT_FOLDER"], chunks, doc._id
+        )
 
         w = DownloadWorker(config)
-        when(w)._generate_dane_dirs_for_doc(doc).thenReturn(dane_dirs.get("TEMP_FOLDER", None))
+        when(w)._generate_dane_dirs_for_doc(doc).thenReturn(
+            dane_dirs.get("TEMP_FOLDER", None)
+        )
         when(os.path).exists(dane_dirs["TEMP_FOLDER"]).thenReturn(download_path_exists)
         download_dir = w._determine_download_dir(doc, task)
         if download_path_exists:
