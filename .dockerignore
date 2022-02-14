@@ -3,4 +3,5 @@ base_config.yml
 config-k8s.yml
 config.yml
 README.md
-requirements.txt
+.pytest_cache
+pyproject.toml

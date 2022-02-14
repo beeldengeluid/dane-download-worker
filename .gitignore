@@ -5,3 +5,4 @@ config.yml
 .coverage
 mount
 logs
+.pytest_cache
