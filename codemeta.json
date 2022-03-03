@@ -48,6 +48,16 @@
                 "@type": "Organization",
                 "name": "The Netherlands Institute for Sound and Vision"
             }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-2713-213X",
+            "givenName": "Govert",
+            "familyName": "Brinkmann",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "The Netherlands Institute for Sound and Vision"
+            }
         }
     ]
 }
