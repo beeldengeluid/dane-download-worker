@@ -6,7 +6,6 @@ authors = [
     "Nanne van Noord",
     "Jaap Blom"
 ]
-license = "https://spdx.org/licenses/GPL-3.0"
 readme = "README.md"
 python = "^3.8"
 homepage = "https://github.com/beeldengeluid/dane-download-worker"
