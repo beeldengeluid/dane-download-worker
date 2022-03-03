@@ -1,7 +1,6 @@
 FROM python:3
 
 COPY ./ /src
-COPY Pipfile Pipfile.lock /src/
 
 # override this config in Kubernetes with a ConfigMap mounted as a volume to /root/.DANE
 RUN mkdir /root/.DANE
