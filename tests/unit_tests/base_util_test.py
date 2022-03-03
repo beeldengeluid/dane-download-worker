@@ -20,10 +20,10 @@ def test_validate_config(config, environment_variables):
 @pytest.mark.parametrize(
     "size, bytes",
     [
-        ("10MB", 10 ** 7),
-        ("10 MB", 10 ** 7),  # with spaces also is allowed
-        ("1111MB", 1111 * 10 ** 6),
-        ("100GB", 10 ** 11),
+        ("10MB", 10**7),
+        ("10 MB", 10**7),  # with spaces also is allowed
+        ("1111MB", 1111 * 10**6),
+        ("100GB", 10**11),
         ("1Megabyte", -1),  # unit string too long (should be 2 chars)
         ("1PB", -1),  # invalid unit
     ],
