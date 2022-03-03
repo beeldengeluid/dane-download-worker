@@ -115,7 +115,7 @@ class DownloadWorker(DANE.base_classes.base_worker):
             download_dir = self._generate_dane_dirs_for_doc(doc)
         return download_dir if download_dir and os.path.exists(download_dir) else None
 
-    def callback(self, task, doc):
+    def callback(self, task, doc):  # noqa: C901 #TODO
         # encode the URI, make sure it's safe
         target_url = requote_uri(doc.target["url"])
         self.logger.debug("Download task for: {}".format(target_url))
