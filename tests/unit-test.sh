@@ -11,7 +11,9 @@ if [ ! -z "$USE_VENV" ] ; then
 fi
 
 cd ../
-pytest tests/unit_tests --cov
+
+# run tests (configured in pyproject.toml)
+pytest
 
 
 # quit if there are Python syntax errors or undefined names

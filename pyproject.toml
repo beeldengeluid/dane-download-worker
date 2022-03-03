@@ -56,3 +56,11 @@ exclude = '''
   )/
 )
 '''
+
+[tool.pytest.ini_options]
+testpaths = [
+  "tests/unit_tests",
+]
+addopts = [
+  "--cov",
+]
