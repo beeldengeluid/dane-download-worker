@@ -51,8 +51,11 @@ DUMMY_FILE = "test.mp3"
 )
 def test_preprocess_url(url: str):
     try:
-        assert ";" not in preprocess_url(url)  # all semicolons are removed
-        assert "%" not in preprocess_url(url)  # url is unquoted (i.e. no url encodings)
+        preprocessed = preprocess_url(url)
+        assert preprocessed and ";" not in preprocessed  # all semicolons are removed
+        assert (
+            preprocessed and "%" not in preprocessed
+        )  # url is unquoted (i.e. no url encodings)
     finally:
         unstub()
 
@@ -88,7 +91,8 @@ def test_preprocess_url(url: str):
 )
 def test_extract_filename_from_url(url: str, expected_fn: str):
     try:
-        assert expected_fn in extract_filename_from_url(url)
+        extracted = extract_filename_from_url(url)
+        assert extracted and expected_fn in extracted
     finally:
         unstub()
 
