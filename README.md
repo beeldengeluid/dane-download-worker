@@ -1,6 +1,6 @@
 # Download worker
 
-This is a worker that interacts with [DANE](https://github.com/CLARIAH/DANE) to receive its work. 
+This is a worker that interacts with [DANE](https://github.com/CLARIAH/DANE) to receive its work.
 It downloads the file provided in the `target.url` of a DANE document.
 
 Running DANE and any DANE worker is most manageable using Kubernetes, instructions for setting up a DANE Kubernetes cluster will be provided in a separate (Helm) repository.
