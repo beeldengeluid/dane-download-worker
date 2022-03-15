@@ -8,6 +8,7 @@ pytest = "*"
 mockito = "*"
 flake8 = "*"
 pytest-cov = "*"
+black = "*"
 
 [packages]
 validators = "*"
