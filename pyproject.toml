@@ -64,3 +64,8 @@ testpaths = [
 addopts = [
   "--cov",
 ]
+
+[tool.coverage.run]
+omit = [
+  "tests/*"
+]
