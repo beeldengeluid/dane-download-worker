@@ -11,6 +11,7 @@ pytest-cov = "*"
 black = "*"
 flake8-bugbear = "*"
 mypy = "*"
+types-requests = "*"
 
 [packages]
 validators = "*"
