@@ -23,6 +23,11 @@ jobs:
     - name: "Install dev environment"
       run: "pipenv install --dev"
 
+    - name: "test"
+      run: |
+        cp config_test.yml config.yml
+        pipenv run pytest
+
     - name: "flake8"
       run: "pipenv run flake8"
 
