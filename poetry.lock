@@ -486,7 +486,7 @@ PyYAML = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "e4abeca258a3dfde2b247a994ce6867135399e80fbb7dd9fe56ad077e79d510b"
+content-hash = "52b940458f5a4a3276aa7298f4973ac9409eb1137ea71800c72434ba5fc8eedd"
 
 [metadata.files]
 atomicwrites = [

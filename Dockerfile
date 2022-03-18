@@ -10,7 +10,7 @@ RUN mkdir /mnt/dane-fs
 
 WORKDIR /src
 
-RUN pip install pipenv
-RUN pipenv sync --system
+RUN pip install poetry
+RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
 CMD [ "python", "worker.py" ]
