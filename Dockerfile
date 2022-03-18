@@ -11,6 +11,6 @@ RUN mkdir /mnt/dane-fs
 WORKDIR /src
 
 RUN pip install pipenv
-RUN pipenv install --system
+RUN pipenv sync --system
 
 CMD [ "python", "worker.py" ]
