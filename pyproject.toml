@@ -7,7 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-elasticsearch = "7.17.1"
+elasticsearch = "8.1.0"
 requests = "^2.27.1"
 validators = "^0.18.2"
 DANE = "^0.3.0"
