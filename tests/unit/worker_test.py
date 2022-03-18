@@ -144,16 +144,16 @@ def test_check_whitelist(config, url, whitelist, in_whitelist):
 @pytest.mark.parametrize(
     "threshold, file_within_threshold, free_disk_space",
     [  # 10MB free disk for most examples
-        (10 ** 6, True, 10 ** 7),  # 1MB
-        (10 ** 7 - 1, True, 10 ** 7),  # 10MB minus one byte
+        (10**6, True, 10**7),  # 1MB
+        (10**7 - 1, True, 10**7),  # 10MB minus one byte
         (
-            10 ** 7,
+            10**7,
             False,
-            10 ** 7,
+            10**7,
         ),  # 10MB is the same as the bytes free, which is not accepted
-        (10 ** 8, False, 10 ** 7),  # 100MB
-        (10 ** 9, False, 10 ** 7),  # 1GB
-        (10 ** 9, True, 10 ** 10),  # 1GB (now 10GB free)
+        (10**8, False, 10**7),  # 100MB
+        (10**9, False, 10**7),  # 1GB
+        (10**9, True, 10**10),  # 1GB (now 10GB free)
     ],
 )
 def test_check_download_threshold(

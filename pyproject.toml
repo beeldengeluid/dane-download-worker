@@ -1,49 +1,30 @@
-[project]
+[tool.poetry]
 name = "dane-download-worker"
-version = "0.9.0"
-description = "Basic \"DANE worker\" that downloads input data via HTTP(s) URLs for further processing by other DANE workers. Depends on DANE-server"
-authors = [
-    "Nanne van Noord",
-    "Jaap Blom"
-]
-license = "https://spdx.org/licenses/GPL-3.0"
-readme = "README.md"
-python = "^3.8"
-homepage = "https://github.com/beeldengeluid/dane-download-worker"
-repository = "https://github.com/beeldengeluid/dane-download-worker"
-documentation = "https://github.com/beeldengeluid/dane-download-worker"
+version = "0.1.0"
+description = "DANE download worker; downloads source file defined in DANE documents"
+authors = ["jblom <jblom@beeldengeluid.nl>", "gbrinkmann <gbrinkmann@beeldengeluid.nl>"]
+license = "MIT"
 
-keywords = ["Multimedia processing"]
+[tool.poetry.dependencies]
+python = "^3.10"
+elasticsearch = "7.17.1"
+requests = "^2.27.1"
+validators = "^0.18.2"
+DANE = "^0.3.0"
 
-classifiers = [
-    "Topic :: Multimedia processing"
-]
-
-# Requirements
-[dependencies]
-requests = "*"
-dane = "*"
-elasticsearch = "*"
-yacs = "*"
-pika = "*"
-validators = "*"
-
-[dev-dependencies]
-pytest = "*"
-mockito = "*"
-flake8 = "*"
-pytest-cov = "*"
-
-[build-system]
-requires = [
-    "setuptools >= 35.0.2",
-    "setuptools_scm >= 2.0.0, <3"
-]
-build-backend = "setuptools.build_meta"
+[tool.poetry.dev-dependencies]
+pytest = "^7.1.1"
+pytest-cov = "^3.0.0"
+mockito = "^1.3.0"
+flake8 = "^4.0.1"
+flake8-bugbear = "^22.1.11"
+black = "^22.1.0"
+mypy = "^0.941"
+types-requests = "^2.27.13"
 
 [tool.black]
 line-length = 88
-target_version = ['py38']
+target_version = ['py310']
 include = '\.pyi?$'
 exclude = '''
 
@@ -56,3 +37,31 @@ exclude = '''
   )/
 )
 '''
+
+[tool.pytest.ini_options]
+testpaths = [
+  "tests/unit",
+]
+addopts = [
+  "--cov",
+]
+
+[tool.coverage.run]
+omit = [
+  "tests/*"
+]
+
+[tool.mypy]
+python_version = "3.10"
+
+[[tool.mypy.overrides]]
+module = [
+  "DANE.*",
+  "mockito",
+  "validators",
+]
+ignore_missing_imports = true
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

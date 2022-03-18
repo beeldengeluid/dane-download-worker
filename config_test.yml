@@ -4,22 +4,22 @@
 #   THEN the local config.yml
 #
 # Therefore, we use:
-# - For local testing: a local config.yml (copy of config_test.yml)
+# - For local testing: a local config.yml (copy based on this file)
 # - In k8s mode: create a k8s ConfigMap (--from-file config.yml) and mount it in ~/.DANE/config.yml
 #
 # Note: it does not seem possible to mount a ConfigMap in the root dir of the worker, so
 #       base_config.yml and config.yml are in .dockerignore (so they cannot overwrite ~/.DANE/config.yml)
 #
-# Note: For local testing, use config_test.yml (copy as config.yml to root of repo)
+# Note: For local testing, copy this file to config.yml (in main dir of this repo)
 RABBITMQ: # common settings for each DANE worker to connect to DANE-server RabbitMQ server
-    HOST: 'dane-rabbitmq-api.default.svc.cluster.local' # when using default namespace in k8s
+    HOST: 'localhost' # when using default namespace in k8s
     PORT: 5672  # RMQ default
     EXCHANGE: 'DANE-exchange' # DANE-server default
     RESPONSE_QUEUE: 'DANE-response-queue' # DANE-server default
     USER: 'guest' # RMQ default
     PASSWORD: 'guest' # RMQ default
 ELASTICSEARCH: # common settings for each DANE worker to connect to DANE-server Elasticsearch cluster
-    HOST: ['elasticsearch'] # define k8s Endpoint with this name to connect external ES cluster
+    HOST: ['localhost'] # define k8s Endpoint with this name to connect external ES cluster
     PORT: 9200 # ES default
     USER: '' # ES default
     PASSWORD: '' # ES default
@@ -33,5 +33,5 @@ LOGGING: # used in base_util.py
     LEVEL: 'DEBUG' # DEBUG, INFO, WARNING, ERROR, CRITICAL
     DIR: 'logs' # directory relative from worker.py
 PATHS: # common settings for each DANE worker to define input/output dirs (with a common mount point)
-    TEMP_FOLDER: "/mnt/dane-fs/input-files" # directory is automatically created
-    OUT_FOLDER: "/mnt/dane-fs/output-files" # directory is automatically created
+    TEMP_FOLDER: "./mount" # directory is automatically created (use ./mount for local testing)
+    OUT_FOLDER: "./mount" # directory is automatically created (use ./mount for local testing)

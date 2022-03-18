@@ -38,10 +38,13 @@ class DownloadWorker(DANE.base_classes.base_worker):
             # in bytes, might only work on Unix
             self.threshold = parse_file_size(config.DOWNLOADER.FS_THRESHOLD)
 
-        if self.UNIT_TESTING is False:  # do not connect to DANE while unit testing
-            super().__init__(
-                queue=self.__queue_name, binding_key="#.DOWNLOAD", config=config
-            )
+        super().__init__(
+            queue=self.__queue_name,
+            binding_key="#.DOWNLOAD",
+            config=config,
+            auto_connect=not self.UNIT_TESTING,
+            no_api=self.UNIT_TESTING,
+        )
 
     def _requires_download(self, doc, task, download_file_path):
         if os.path.exists(download_file_path):
@@ -112,7 +115,7 @@ class DownloadWorker(DANE.base_classes.base_worker):
             download_dir = self._generate_dane_dirs_for_doc(doc)
         return download_dir if download_dir and os.path.exists(download_dir) else None
 
-    def callback(self, task, doc):
+    def callback(self, task, doc):  # noqa: C901 #TODO
         # encode the URI, make sure it's safe
         target_url = requote_uri(doc.target["url"])
         self.logger.debug("Download task for: {}".format(target_url))

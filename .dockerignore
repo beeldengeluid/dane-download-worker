@@ -1,7 +1,7 @@
 .gitignore
 base_config.yml
-config-k8s.yml
+config_k8s.yml
+config_test.yml
 config.yml
 README.md
 .pytest_cache
-pyproject.toml

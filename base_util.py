@@ -1,3 +1,4 @@
+from typing import Optional
 import string
 import unicodedata
 import uuid
@@ -10,7 +11,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 
 VALID_FILENAME_CHARS = "-_. {}{}".format(string.ascii_letters, string.digits)
-FILE_SIZE_UNITS = {"B": 1, "KB": 10 ** 3, "MB": 10 ** 6, "GB": 10 ** 9, "TB": 10 ** 12}
+FILE_SIZE_UNITS = {"B": 1, "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}
 
 
 def parse_file_size(size):
@@ -26,7 +27,7 @@ def parse_file_size(size):
         return -1
 
 
-def url_to_safe_filename(url: str) -> str:
+def url_to_safe_filename(url: str) -> Optional[str]:
     prepped_url = preprocess_url(url)
     if prepped_url is None:
         return None
@@ -36,7 +37,7 @@ def url_to_safe_filename(url: str) -> str:
     return to_safe_filename(unsafe_fn)
 
 
-def preprocess_url(url: str) -> str:
+def preprocess_url(url: str) -> Optional[str]:
     if type(url) != str:
         return None
 
@@ -47,7 +48,7 @@ def preprocess_url(url: str) -> str:
     return unquote(url)
 
 
-def extract_filename_from_url(url: str) -> str:
+def extract_filename_from_url(url: str) -> Optional[str]:
     if type(url) != str:
         return None
 
@@ -67,8 +68,8 @@ def extract_filename_from_url(url: str) -> str:
 
 
 def to_safe_filename(
-    fn: str, whitelist: list = VALID_FILENAME_CHARS, char_limit: int = 255
-) -> str:
+    fn: Optional[str], whitelist: str = VALID_FILENAME_CHARS, char_limit: int = 255
+) -> Optional[str]:
     if type(fn) != str:
         return None
 
@@ -203,7 +204,7 @@ def __check_log_level(level: str) -> bool:
     return level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
-def __validate_parent_dirs(paths: list) -> bool:
+def __validate_parent_dirs(paths: list) -> None:
     try:
         for p in paths:
             assert os.path.exists(
