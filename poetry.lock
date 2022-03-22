@@ -389,7 +389,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "types-requests"
-version = "2.27.13"
+version = "2.27.14"
 description = "Typing stubs for requests"
 category = "dev"
 optional = false
@@ -456,7 +456,7 @@ PyYAML = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "df13d6989266a25a316c95af56667dfd967936626f603af1da6295bf38b758a2"
+content-hash = "8644497fa7786e13176cd29b160652d5e698deef5a885829929ab1281bf02d11"
 
 [metadata.files]
 atomicwrites = [
@@ -707,8 +707,8 @@ tomli = [
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
 ]
 types-requests = [
-    {file = "types-requests-2.27.13.tar.gz", hash = "sha256:cf0646031dd6307113b37814f743c04f0707a3357378c2bb1326f848412f5ba9"},
-    {file = "types_requests-2.27.13-py3-none-any.whl", hash = "sha256:5d6f77f3c7565659bdb7b7bce1d33d1abb7d0b056138cac714860e13da2f19df"},
+    {file = "types-requests-2.27.14.tar.gz", hash = "sha256:04579ee164f7c2659be46950e3c2f8d51a081ad252ef1b01d4b12faba5c3810b"},
+    {file = "types_requests-2.27.14-py3-none-any.whl", hash = "sha256:c01838abfe3e8a83ba68346cd373afff97594c19c15c922ddee4a0e80ba7e329"},
 ]
 types-urllib3 = [
     {file = "types-urllib3-1.26.11.tar.gz", hash = "sha256:24d64e441168851eb05f1d022de18ae31558f5649c8f1117e384c2e85e31315b"},
