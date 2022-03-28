@@ -12,7 +12,8 @@
     "isPartOf": "https://github.com/CLARIAH/DANE-server",
     "funder": {
         "@type": "Organization",
-        "name": "CLARIN-NL"
+		"name": "CLARIAH",
+		"url": "https://www.clariah.nl"
     },
     "programmingLanguage": [
         "Python 3"
