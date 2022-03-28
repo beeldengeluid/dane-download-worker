@@ -2,6 +2,11 @@ on:
   push:
     branches:
       - "main"
+    paths-ignore:
+      - ./*.yml
+      - README.md
+      - LICENSE
+      - codemeta.json
 
 name: Deploy to Amazon ECR
 
