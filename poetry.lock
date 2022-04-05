@@ -116,7 +116,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "elasticsearch"
-version = "7.17.1"
+version = "7.17.2"
 description = "Python client for Elasticsearch"
 category = "main"
 optional = false
@@ -456,7 +456,7 @@ PyYAML = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "7c3116c6d1aff1a3af7c665a0687ef013e33fded813e889f89056c9113fb9f8b"
+content-hash = "e3b6d4cfc3bb305e2c5c49e144dc917c9e32e57f8c78946680fafe39d0be2159"
 
 [metadata.files]
 atomicwrites = [
@@ -559,8 +559,8 @@ decorator = [
     {file = "decorator-5.1.1.tar.gz", hash = "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330"},
 ]
 elasticsearch = [
-    {file = "elasticsearch-7.17.1-py2.py3-none-any.whl", hash = "sha256:8c79fe145f23826df144d1adc406a131e5cf3f41f302869fb5a1263b381e5ee2"},
-    {file = "elasticsearch-7.17.1.tar.gz", hash = "sha256:0061c49c3d4202802c09fba6734e48699a47cfeb737747acecc932ea73b7d318"},
+    {file = "elasticsearch-7.17.2-py2.py3-none-any.whl", hash = "sha256:f49ebaf9e9652a468db4dce5eb8a6a7ea33594ab988f6dadebf36f99772ac809"},
+    {file = "elasticsearch-7.17.2.tar.gz", hash = "sha256:1b1fa86cbfab39bf43dce1f76f737fc59d5a8e792e2a721e0b4437db44da5647"},
 ]
 flake8 = [
     {file = "flake8-4.0.1-py2.py3-none-any.whl", hash = "sha256:479b1304f72536a55948cb40a32dce8bb0ffe3501e26eaf292c7e60eb5e0428d"},
