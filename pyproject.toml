@@ -20,7 +20,7 @@ flake8 = "^4.0.1"
 flake8-bugbear = "^22.3.23"
 black = "^22.3.0"
 mypy = "^0.942"
-types-requests = "^2.27.16"
+types-requests = "^2.27.19"
 
 [tool.black]
 line-length = 88
