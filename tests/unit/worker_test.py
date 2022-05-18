@@ -3,8 +3,8 @@ import os
 import pytest
 from mockito import unstub, when, verify
 from worker import DownloadWorker
-from DANE import Result, Document, Task
-from DANE import errors
+from dane import Result, Document, Task
+from dane import errors
 
 
 DUMMY_DOWNLOAD_DIR = "/mnt/dane-fs/output-files"
@@ -183,7 +183,7 @@ def test_check_download_threshold(
 )
 def test_determine_download_dir(config, doc, task, download_path_exists):
     try:
-        # this part is done by DANE.base_classes.getDirs(), recreate it here for transparancy
+        # this part is done by dane.base_classes.getDirs(), recreate it here for transparancy
         dane_dirs = {**DUMMY_DANE_DIRS}
         chunks = os.path.join(
             *[doc._id[i : 2 + i] for i in range(0, min(len(doc._id), 6), 2)]

@@ -5,10 +5,10 @@ from urllib.error import HTTPError
 from requests.utils import requote_uri
 import shutil
 import os
-import DANE.base_classes
-from DANE.config import cfg
-from DANE import Result, Task, Document
-from DANE import errors
+from dane.base_classes import base_worker
+from dane.config import cfg
+from dane import Result, Task, Document
+from dane import errors
 from base_util import (
     init_logger,
     validate_config,
@@ -17,7 +17,7 @@ from base_util import (
 )
 
 
-class DownloadWorker(DANE.base_classes.base_worker):
+class DownloadWorker(base_worker):
     # we specify a queue name because every worker of this type should
     # listen to the same queue
     __queue_name = "DOWNLOAD"
@@ -103,7 +103,7 @@ class DownloadWorker(DANE.base_classes.base_worker):
             return False
         return True
 
-    # returns this "chunked" dir based on the doc id (see DANE.base_classes.getDirs())
+    # returns this "chunked" dir based on the doc id (see dane.base_classes.getDirs())
     def _generate_dane_dirs_for_doc(self, doc: Document) -> dict:
         return self.getDirs(doc).get("TEMP_FOLDER", None)
 
@@ -138,7 +138,7 @@ class DownloadWorker(DANE.base_classes.base_worker):
         # check if the file fits the download threshhold
         if not self._check_download_threshold(self.threshold, download_dir):
             self.logger.error("Insufficient disk space")
-            raise DANE.errors.RefuseJobException("Insufficient disk space")
+            raise errors.RefuseJobException("Insufficient disk space")
 
         download_filename = url_to_safe_filename(target_url)
         download_file_path = os.path.join(download_dir, download_filename)
