@@ -1,3 +1,4 @@
+[![Pre-Commit](https://github.com/beeldengeluid/dane-download-worker/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/beeldengeluid/dane-download-worker/actions/workflows/pre-commit.yml)  [![Deploy to Amazon ECR](https://github.com/beeldengeluid/dane-download-worker/actions/workflows/aws-ecr.yml/badge.svg)](https://github.com/beeldengeluid/dane-download-worker/actions/workflows/aws-ecr.yml)
 # Download worker
 
 This is a worker that interacts with [DANE](https://github.com/CLARIAH/DANE) to receive its work.
