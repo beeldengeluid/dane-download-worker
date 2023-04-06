@@ -29,9 +29,9 @@ DOWNLOADER: # settings specific for this worker
     FS_THRESHOLD: '10GB' # use xxGB, xxTB, etc
     WHITELIST:
         - 'myownvideos.com' # valid domain name
-LOGGING: # used in base_util.py
-    LEVEL: 'DEBUG' # DEBUG, INFO, WARNING, ERROR, CRITICAL
-    DIR: 'logs' # directory relative from worker.py
+S3:
+  AWS_ACCESS_KEY_ID: some-key
+  AWS_SECRET_ACCESS_KEY: some-secret
 PATHS: # common settings for each DANE worker to define input/output dirs (with a common mount point)
     TEMP_FOLDER: "/mnt/dane-fs/input-files" # directory is automatically created
     OUT_FOLDER: "/mnt/dane-fs/output-files" # directory is automatically created

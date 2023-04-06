@@ -1,4 +1,6 @@
 import json
+import sys
+import logging
 import urllib.request as req
 from urllib.parse import urlparse
 from urllib.error import HTTPError
@@ -9,12 +11,16 @@ from dane.base_classes import base_worker
 from dane.config import cfg
 from dane import Result, Task, Document
 from dane import errors
-from base_util import (
-    init_logger,
-    validate_config,
-    parse_file_size,
-    url_to_safe_filename,
+from base_util import validate_config, parse_file_size, url_to_safe_filename, LOG_FORMAT
+
+
+# initialises the root logger
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,  # configure a stream handler only for now (single handler)
+    format=LOG_FORMAT,
 )
+logger = logging.getLogger()
 
 
 class DownloadWorker(base_worker):
@@ -23,13 +29,12 @@ class DownloadWorker(base_worker):
     __queue_name = "DOWNLOAD"
 
     def __init__(self, config):
-        self.logger = init_logger(config)
-        self.logger.debug(config)
+        logger.debug(config)
 
         self.UNIT_TESTING = os.getenv("DW_DOWNLOAD_UNIT_TESTING", False)
 
         if not validate_config(config, not self.UNIT_TESTING):
-            self.logger.error("Invalid config, quitting")
+            logger.error("Invalid config, quitting")
             quit()
 
         self.whitelist = config.DOWNLOADER.WHITELIST
@@ -48,7 +53,7 @@ class DownloadWorker(base_worker):
 
     def _requires_download(self, doc, task, download_file_path):
         if os.path.exists(download_file_path):
-            self.logger.debug("Already downloaded {}".format(download_file_path))
+            logger.debug("Already downloaded {}".format(download_file_path))
             return self._save_prior_download_result(doc, task) is False
         return True
 
@@ -69,14 +74,12 @@ class DownloadWorker(base_worker):
                 # timestamp mechanism..
                 r = self._copy_result(results[0])
                 r.save(task._id)
-                self.logger.debug(
-                    "Successfully saved result for task: {}".format(task._id)
-                )
+                logger.debug("Successfully saved result for task: {}".format(task._id))
                 return True
         except (errors.ResultExistsError, errors.TaskAssignedError):
             # seems the tasks or results no longer exists
             # just redownload and get fresh info
-            self.logger.debug(
+            logger.debug(
                 "Redownloading anyway, since prior result data could not be retrieved: {}".format(
                     task._id
                 )
@@ -97,7 +100,7 @@ class DownloadWorker(base_worker):
     def _check_whitelist(self, target_url: str, whitelist: list) -> bool:
         parse = urlparse(target_url)
         if parse.netloc not in whitelist:
-            self.logger.warning(
+            logger.warning(
                 "Requested URL Not in whitelist: {}".format("; ".join(whitelist))
             )
             return False
@@ -118,7 +121,7 @@ class DownloadWorker(base_worker):
     def callback(self, task, doc):  # noqa: C901 #TODO
         # encode the URI, make sure it's safe
         target_url = requote_uri(doc.target["url"])
-        self.logger.debug("Download task for: {}".format(target_url))
+        logger.debug("Download task for: {}".format(target_url))
 
         # check the white list to see if the URL can be downloaded
         if not self._check_whitelist(target_url, self.whitelist):
@@ -129,7 +132,7 @@ class DownloadWorker(base_worker):
 
         # only continue if the dir is accessible by this dane-download-worker
         if download_dir is None:
-            self.logger.error("Download dir does not exist: {}".format(download_dir))
+            logger.error("Download dir does not exist: {}".format(download_dir))
             return {
                 "state": 500,
                 "message": "Non existing TEMP_FOLDER, cannot handle request",
@@ -137,7 +140,7 @@ class DownloadWorker(base_worker):
 
         # check if the file fits the download threshhold
         if not self._check_download_threshold(self.threshold, download_dir):
-            self.logger.error("Insufficient disk space")
+            logger.error("Insufficient disk space")
             raise errors.RefuseJobException("Insufficient disk space")
 
         download_filename = url_to_safe_filename(target_url)
@@ -158,9 +161,7 @@ class DownloadWorker(base_worker):
 
             content_length = int(headers.get("Content-Length", failobj=-1))
             if content_length > -1 and out_size != content_length:
-                self.logger.warning(
-                    "Download incomplete for: {}".format(download_filename)
-                )
+                logger.warning("Download incomplete for: {}".format(download_filename))
                 return json.dumps(
                     {
                         "state": 502,
@@ -171,15 +172,13 @@ class DownloadWorker(base_worker):
                 )
         except HTTPError as e:
             if e.code == 404:
-                self.logger.warning("Source returned 404: {}".format(e.reason))
+                logger.warning("Source returned 404: {}".format(e.reason))
                 return {"state": e.code, "message": e.reason}
             elif e.code == 500:
-                self.logger.warning("Source returned 500: {}".format(e.reason))
+                logger.warning("Source returned 500: {}".format(e.reason))
                 return {"state": 503, "message": "Source host 500 error: " + e.reason}
             else:
-                self.logger.warning(
-                    "Source returned an unknown error: {}".format(e.reason)
-                )
+                logger.warning("Source returned an unknown error: {}".format(e.reason))
                 return {
                     "state": 500,
                     "message": "Unhandled source host error: "
@@ -194,7 +193,7 @@ class DownloadWorker(base_worker):
             if "/" in c_type:
                 file_type = c_type.split("/")[0]
             else:
-                self.logger.warning("Handling unknown file type: {}".format(c_type))
+                logger.warning("Handling unknown file type: {}".format(c_type))
                 file_type = "unknown"
 
             r = Result(
@@ -208,12 +207,11 @@ class DownloadWorker(base_worker):
                 api=self.handler,
             )
             r.save(task._id)
-            self.logger.debug("Succesfully downloaded: {}".format(target_url))
+            logger.debug("Succesfully downloaded: {}".format(target_url))
             return {"state": 200, "message": "Success"}
 
 
 if __name__ == "__main__":
-
     dlw = DownloadWorker(cfg)
 
     print(" # Initialising worker. Ctrl+C to exit")
