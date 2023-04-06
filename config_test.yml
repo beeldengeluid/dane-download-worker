@@ -29,9 +29,6 @@ DOWNLOADER: # settings specific for this worker
     FS_THRESHOLD: '10GB' # use xxGB, xxTB, etc
     WHITELIST:
         - 'myownvideos.com' # valid domain name
-S3:
-  AWS_ACCESS_KEY_ID: some-key
-  AWS_SECRET_ACCESS_KEY: some-secret
 PATHS: # common settings for each DANE worker to define input/output dirs (with a common mount point)
     TEMP_FOLDER: "./mount" # directory is automatically created (use ./mount for local testing)
     OUT_FOLDER: "./mount" # directory is automatically created (use ./mount for local testing)

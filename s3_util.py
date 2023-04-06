@@ -19,7 +19,7 @@ def deconstruct_s3_uri(s3_uri: str) -> Tuple[str, str, str]:
 
 def download_s3_uri(s3_uri: str, download_dir: str, access_key: str, secret: str):
     logger.info(s3_uri)
-    s3 = boto3.client("s3", aws_access_key_id=access_key, aws_secret_access_key=secret)
+    s3 = boto3.client("s3")
     bucket, key, fn = deconstruct_s3_uri(s3_uri)
     try:
         with open(os.path.join(download_dir, fn), "wb") as f:
