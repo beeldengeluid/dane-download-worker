@@ -29,6 +29,8 @@ DOWNLOADER: # settings specific for this worker
     FS_THRESHOLD: '10GB' # use xxGB, xxTB, etc
     WHITELIST:
         - 'myownvideos.com' # valid domain name
+LOGGING:
+    LEVEL: DEBUG
 PATHS: # common settings for each DANE worker to define input/output dirs (with a common mount point)
     TEMP_FOLDER: "/mnt/dane-fs/input-files" # directory is automatically created
     OUT_FOLDER: "/mnt/dane-fs/output-files" # directory is automatically created

@@ -1,22 +1,21 @@
-import json
 import sys
 import logging
-import urllib.request as req
-from urllib.parse import urlparse
-from urllib.error import HTTPError
 from requests.utils import requote_uri
-import shutil
+from urllib.parse import urlparse
 import os
 from dane.base_classes import base_worker
 from dane.config import cfg
 from dane import Result, Task, Document
 from dane import errors
-from base_util import validate_config, parse_file_size, url_to_safe_filename, LOG_FORMAT
+from base_util import validate_config, parse_file_size, LOG_FORMAT
+from s3_download import download_s3_uri
+from http_download import download_http
+from model import DANEResponse
 
 
 # initialises the root logger
 logging.basicConfig(
-    level=logging.INFO,
+    level=cfg.LOGGING.LEVEL,  # this setting has a default in DANE library so safe to use
     stream=sys.stdout,  # configure a stream handler only for now (single handler)
     format=LOG_FORMAT,
 )
@@ -51,19 +50,58 @@ class DownloadWorker(base_worker):
             no_api=self.UNIT_TESTING,
         )
 
-    def _requires_download(self, doc, task, download_file_path):
-        if os.path.exists(download_file_path):
-            logger.debug("Already downloaded {}".format(download_file_path))
-            return self._save_prior_download_result(doc, task) is False
-        return True
+    def callback(self, task, doc):  # noqa: C901 #TODO
+        # encode the URI, make sure it's safe
+        target_url = requote_uri(doc.target["url"])
+        is_s3 = self._is_s3_uri(target_url)
+        logger.info(f"Download task for: {target_url}")
 
-    def _get_prior_download_results(
-        self, doc_id: str
-    ) -> list:  # list with Result objects
-        return self.handler.searchResult(doc_id, "DOWNLOAD")
+        # check the white list in case it's not an S3 URI
+        if not is_s3:
+            if not self._check_whitelist(target_url, self.whitelist):
+                return DANEResponse(
+                    403, f"Source url not in whitelist: {target_url}"
+                ).to_json()
 
-    def _copy_result(self, result: Result) -> Result:
-        return Result(self.generator, payload=result.payload, api=self.handler)
+        # define the download/temp dir by checking task arguments and default DANE config
+        download_dir = self._determine_download_dir(doc, task)
+
+        # only continue if the dir is accessible by this dane-download-worker
+        if download_dir is None:
+            logger.error(f"Download dir does not exist: {download_dir}")
+            return DANEResponse(
+                500, "Non existing TEMP_FOLDER, cannot handle request"
+            ).to_json()
+
+        # check if the file fits the download threshhold
+        if not self._check_download_threshold(self.threshold, download_dir):
+            logger.error("Insufficient disk space")
+            raise errors.RefuseJobException("Insufficient disk space")
+
+        # call the correct downloader
+        if is_s3:
+            result = download_s3_uri(target_url, download_dir)
+        else:
+            result = download_http(target_url, download_dir)
+
+        dane_result_saved = False
+        if result.already_downloaded:  # TODO or result.dane_result.state == 201
+            logger.info("File was already downloaded, trying to save prior DANE result")
+            dane_result_saved = self._save_prior_download_result(doc, task)
+
+        # in case of no error go ahead with writing the DANE Result
+        if result.dane_response.state == 200 and not dane_result_saved:
+            r = Result(
+                self.generator,
+                payload={
+                    "file_path": result.download_file_path,  # TODO extract file info from the file
+                    **result.file_info,  # add any extracted file info
+                },
+                api=self.handler,
+            )
+            r.save(task._id)
+            logger.debug(f"Succesfully downloaded: {target_url}")
+            return result.dane_response.to_json()
 
     # try to copy the DANE Result for a possibly earlier download
     def _save_prior_download_result(self, doc: Document, task: Task) -> bool:
@@ -85,6 +123,14 @@ class DownloadWorker(base_worker):
                 )
             )
         return False
+
+    def _get_prior_download_results(
+        self, doc_id: str
+    ) -> list:  # list with Result objects
+        return self.handler.searchResult(doc_id, "DOWNLOAD")
+
+    def _copy_result(self, result: Result) -> Result:
+        return Result(self.generator, payload=result.payload, api=self.handler)
 
     def _get_bytes_free(self, download_dir: str) -> int:
         disk_stats = os.statvfs(download_dir)
@@ -118,103 +164,13 @@ class DownloadWorker(base_worker):
             download_dir = self._generate_dane_dirs_for_doc(doc)
         return download_dir if download_dir and os.path.exists(download_dir) else None
 
-    def callback(self, task, doc):  # noqa: C901 #TODO
-        # encode the URI, make sure it's safe
-        target_url = requote_uri(doc.target["url"])
-        logger.debug("Download task for: {}".format(target_url))
-
-        # check the white list to see if the URL can be downloaded
-        if not self._check_whitelist(target_url, self.whitelist):
-            return {"state": 403, "message": "Source url not permitted"}
-
-        # define the download/temp dir by checking task arguments and default DANE config
-        download_dir = self._determine_download_dir(doc, task)
-
-        # only continue if the dir is accessible by this dane-download-worker
-        if download_dir is None:
-            logger.error("Download dir does not exist: {}".format(download_dir))
-            return {
-                "state": 500,
-                "message": "Non existing TEMP_FOLDER, cannot handle request",
-            }
-
-        # check if the file fits the download threshhold
-        if not self._check_download_threshold(self.threshold, download_dir):
-            logger.error("Insufficient disk space")
-            raise errors.RefuseJobException("Insufficient disk space")
-
-        download_filename = url_to_safe_filename(target_url)
-        download_file_path = os.path.join(download_dir, download_filename)
-
-        # maybe the file was already downloaded
-        if not self._requires_download(doc, task, download_file_path):
-            return {"state": 200, "message": "Success"}
-
-        # now proceed to the actual downloading and saving the download result
-        try:
-            with req.urlopen(target_url) as response, open(
-                download_file_path, "wb"
-            ) as out_file:
-                headers = response.info()
-                shutil.copyfileobj(response, out_file)
-                out_size = out_file.tell()
-
-            content_length = int(headers.get("Content-Length", failobj=-1))
-            if content_length > -1 and out_size != content_length:
-                logger.warning("Download incomplete for: {}".format(download_filename))
-                return json.dumps(
-                    {
-                        "state": 502,
-                        "message": "Received incomplete file: {} ({} out of {} bytes)".format(
-                            download_filename, out_size, content_length
-                        ),
-                    }
-                )
-        except HTTPError as e:
-            if e.code == 404:
-                logger.warning("Source returned 404: {}".format(e.reason))
-                return {"state": e.code, "message": e.reason}
-            elif e.code == 500:
-                logger.warning("Source returned 500: {}".format(e.reason))
-                return {"state": 503, "message": "Source host 500 error: " + e.reason}
-            else:
-                logger.warning("Source returned an unknown error: {}".format(e.reason))
-                return {
-                    "state": 500,
-                    "message": "Unhandled source host error: "
-                    + str(e.code)
-                    + " "
-                    + e.reason,
-                }
-        else:  # means the download was successful, time to write the result to ES and return a response
-            c_type = (
-                headers.get_content_type()
-            )  # TODO filter for allowed content-types?
-            if "/" in c_type:
-                file_type = c_type.split("/")[0]
-            else:
-                logger.warning("Handling unknown file type: {}".format(c_type))
-                file_type = "unknown"
-
-            r = Result(
-                self.generator,
-                payload={
-                    "file_path": download_file_path,
-                    "file_type": file_type,
-                    "Content-Type": c_type,
-                    "Content-Length": content_length,
-                },
-                api=self.handler,
-            )
-            r.save(task._id)
-            logger.debug("Succesfully downloaded: {}".format(target_url))
-            return {"state": 200, "message": "Success"}
+    def _is_s3_uri(self, uri):
+        return type(uri) == str and urlparse(uri).scheme == "s3"
 
 
 if __name__ == "__main__":
     dlw = DownloadWorker(cfg)
-
-    print(" # Initialising worker. Ctrl+C to exit")
+    logging.debug(" # Initialising worker. Ctrl+C to exit")
     try:
         dlw.run()
     except (KeyboardInterrupt, SystemExit):
