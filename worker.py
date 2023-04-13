@@ -103,6 +103,9 @@ class DownloadWorker(base_worker):
             logger.debug(f"Succesfully downloaded: {target_url}")
             return result.dane_response.to_json()
 
+        # it must be an error, return it to DANE
+        return result.dane_response.to_json()
+
     # try to copy the DANE Result for a possibly earlier download
     def _save_prior_download_result(self, doc: Document, task: Task) -> bool:
         try:
