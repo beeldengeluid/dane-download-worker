@@ -66,8 +66,6 @@ def validate_config(config, validate_file_paths=True):
         assert config.LOGGING, "LOGGING"
         assert __check_setting(config.LOGGING.LEVEL, str), "LOGGING.LEVEL"
         assert __check_log_level(config.LOGGING.LEVEL), "Invalid LOGGING.LEVEL defined"
-        assert __check_setting(config.LOGGING.DIR, str), "LOGGING.DIR"
-        parent_dirs_to_check.append(config.LOGGING.DIR)
 
         # DANE python lib settings
         assert config.PATHS, "PATHS"
