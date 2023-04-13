@@ -1,0 +1,9 @@
+name: Manual deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push-ecr:
+    uses: ./.github/workflows/_build-and-push-ecr.yml
+    secrets: inherit
