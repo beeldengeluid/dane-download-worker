@@ -115,12 +115,12 @@ class DownloadWorker(base_worker):
                 # timestamp mechanism..
                 r = self._copy_result(results[0])
                 r.save(task._id)
-                logger.debug("Successfully saved result for task: {}".format(task._id))
+                logger.info("Successfully saved result for task: {}".format(task._id))
                 return True
         except (errors.ResultExistsError, errors.TaskAssignedError):
             # seems the tasks or results no longer exists
             # just redownload and get fresh info
-            logger.debug(
+            logger.info(
                 "Redownloading anyway, since prior result data could not be retrieved: {}".format(
                     task._id
                 )
