@@ -38,7 +38,7 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
     # go ahead with the download
     try:
         with open(download_file_path, "wb") as f:
-            s3.download_fileobj(f"{bucket}.eu-west-1", key, f)
+            s3.download_fileobj(bucket, key, f)
             logger.info("download done")
         return DownloadResult(
             download_file_path,
