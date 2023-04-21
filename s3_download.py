@@ -48,6 +48,9 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
         )
     except Exception as e:
         logger.exception(f"Error while downloading {s3_uri}")
+        if os.path.exists(download_file_path):
+            logger.info("Deleting corrupt/empty file due to failed download")
+            os.remove(download_file_path)
         return DownloadResult(
             download_file_path,
             DANEResponse(500, f"Unkown error: {str(e)}"),
