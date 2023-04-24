@@ -11,6 +11,7 @@ elasticsearch = "7.17.4"
 requests = "^2.28.1"
 validators = "^0.20.0"
 dane = "^0.3.2"
+boto3 = "^1.26.107"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.2"
@@ -59,6 +60,7 @@ module = [
   "dane.*",
   "mockito",
   "validators",
+  "boto3",
 ]
 ignore_missing_imports = true
 

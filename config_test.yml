@@ -29,9 +29,8 @@ DOWNLOADER: # settings specific for this worker
     FS_THRESHOLD: '10GB' # use xxGB, xxTB, etc
     WHITELIST:
         - 'myownvideos.com' # valid domain name
-LOGGING: # used in base_util.py
-    LEVEL: 'DEBUG' # DEBUG, INFO, WARNING, ERROR, CRITICAL
-    DIR: 'logs' # directory relative from worker.py
+LOGGING:
+    LEVEL: DEBUG
 PATHS: # common settings for each DANE worker to define input/output dirs (with a common mount point)
     TEMP_FOLDER: "./mount" # directory is automatically created (use ./mount for local testing)
     OUT_FOLDER: "./mount" # directory is automatically created (use ./mount for local testing)

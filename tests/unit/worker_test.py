@@ -87,35 +87,6 @@ def test_save_prior_download_result(
 
 
 @pytest.mark.parametrize(
-    "file_exists, prior_result_saved, requires_download",
-    [
-        (True, True, False),
-        (False, False, True),
-        (False, True, True),
-    ],
-)
-def test_requires_download(config, file_exists, prior_result_saved, requires_download):
-    try:
-        w = DownloadWorker(config)
-        when(os.path).exists(DUMMY_FILE_PATH).thenReturn(file_exists)
-        when(w)._save_prior_download_result(DUMMY_DOC, DUMMY_TASK).thenReturn(
-            prior_result_saved
-        )
-        resp = w._requires_download(DUMMY_DOC, DUMMY_TASK, DUMMY_FILE_PATH)
-        assert resp is requires_download
-
-        # should always be called
-        verify(os.path, times=1).exists(DUMMY_FILE_PATH)
-
-        # should only be called if DUMMY_FILE_PATH exists
-        verify(w, times=1 if file_exists else 0)._save_prior_download_result(
-            DUMMY_DOC, DUMMY_TASK
-        )
-    finally:
-        unstub()
-
-
-@pytest.mark.parametrize(
     "url, whitelist, in_whitelist",
     [
         ("http://dummy.nl", ["dummy.nl"], True),

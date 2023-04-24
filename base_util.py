@@ -1,17 +1,12 @@
-from typing import Optional
-import string
-import unicodedata
-import uuid
 import os
-from urllib.parse import urlparse, unquote
 from pathlib import Path
 import logging
 import validators
-from logging.handlers import TimedRotatingFileHandler
 
 
-VALID_FILENAME_CHARS = "-_. {}{}".format(string.ascii_letters, string.digits)
+LOG_FORMAT = "%(asctime)s|%(levelname)s|%(process)d|%(module)s|%(funcName)s|%(lineno)d|%(message)s"
 FILE_SIZE_UNITS = {"B": 1, "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}
+logger = logging.getLogger(__name__)
 
 
 def parse_file_size(size):
@@ -25,69 +20,6 @@ def parse_file_size(size):
         return -1
     except KeyError:  # invalid unit was supplied
         return -1
-
-
-def url_to_safe_filename(url: str) -> Optional[str]:
-    prepped_url = preprocess_url(url)
-    if prepped_url is None:
-        return None
-
-    unsafe_fn = extract_filename_from_url(prepped_url)
-
-    return to_safe_filename(unsafe_fn)
-
-
-def preprocess_url(url: str) -> Optional[str]:
-    if type(url) != str:
-        return None
-
-    # ; in the url is terrible, since it cuts off everything after the ; when running urlparse
-    url = url.replace(";", "")
-
-    # make sure to get rid of the URL encoding
-    return unquote(url)
-
-
-def extract_filename_from_url(url: str) -> Optional[str]:
-    if type(url) != str:
-        return None
-
-    # grab the url path
-    url_path = urlparse(url).path
-    if url_path.rfind("/") == len(url_path) - 1:
-        url_path = url_path[:-1]
-    url_host = urlparse(url).netloc
-
-    # get the file/dir name from the URL (if any)
-    fn = os.path.basename(url_path)
-
-    # if the url_path is empty, the file name is meaningless, so return a string based on the url_host
-    return (
-        f"{url_host.replace('.', '_')}__{str(uuid.uuid4())}" if fn in ["", "/"] else fn
-    )
-
-
-def to_safe_filename(
-    fn: Optional[str], whitelist: str = VALID_FILENAME_CHARS, char_limit: int = 255
-) -> Optional[str]:
-    if type(fn) != str:
-        return None
-
-    # replace spaces with underscore (spaces in filenames aren't nice)
-    fn = fn.replace(" ", "_")
-
-    safe_fn = unicodedata.normalize("NFKD", fn).encode("ASCII", "ignore").decode()
-
-    # keep only whitelisted chars
-    safe_fn = "".join(c for c in safe_fn if c in whitelist)
-
-    if len(safe_fn) > char_limit:
-        print(
-            "Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(
-                char_limit
-            )
-        )
-    return safe_fn[:char_limit]
 
 
 def validate_config(config, validate_file_paths=True):
@@ -134,8 +66,6 @@ def validate_config(config, validate_file_paths=True):
         assert config.LOGGING, "LOGGING"
         assert __check_setting(config.LOGGING.LEVEL, str), "LOGGING.LEVEL"
         assert __check_log_level(config.LOGGING.LEVEL), "Invalid LOGGING.LEVEL defined"
-        assert __check_setting(config.LOGGING.DIR, str), "LOGGING.DIR"
-        parent_dirs_to_check.append(config.LOGGING.DIR)
 
         # DANE python lib settings
         assert config.PATHS, "PATHS"
@@ -212,31 +142,3 @@ def __validate_parent_dirs(paths: list) -> None:
             ), f"Parent dir of file does not exist: {p}"
     except AssertionError as e:
         raise (e)
-
-
-def init_logger(config):
-    logger = logging.getLogger("DANE-DOWNLOAD")
-    logger.setLevel(config.LOGGING.LEVEL)
-    # create file handler which logs to file
-    if not os.path.exists(os.path.realpath(config.LOGGING.DIR)):
-        os.makedirs(os.path.realpath(config.LOGGING.DIR), exist_ok=True)
-
-    fh = TimedRotatingFileHandler(
-        os.path.join(os.path.realpath(config.LOGGING.DIR), "DANE-download-worker.log"),
-        when="W6",  # start new log on sunday
-        backupCount=3,
-    )
-    fh.setLevel(config.LOGGING.LEVEL)
-    # create console handler
-    ch = logging.StreamHandler()
-    ch.setLevel(config.LOGGING.LEVEL)
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S"
-    )
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    # add the handlers to the logger
-    logger.addHandler(fh)
-    logger.addHandler(ch)
-    return logger
