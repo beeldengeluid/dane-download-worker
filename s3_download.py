@@ -3,12 +3,17 @@ import boto3
 import os
 from typing import Tuple
 from model import DownloadResult, DANEResponse
+import codecs
 
 
 logger = logging.getLogger(__name__)
 
 
 def validate_s3_uri(s3_uri: str) -> bool:
+    if type(s3_uri) != str:
+        logger.error(f"TypeError for supplied S3 URI: {s3_uri}")
+        return False
+
     if "s3://" not in s3_uri:
         logger.error(f"S3 URI without protocol: {s3_uri}")
         return False
@@ -18,6 +23,18 @@ def validate_s3_uri(s3_uri: str) -> bool:
         logger.error(f"S3 URI must have a bucket name and a file name: {s3_uri}")
         return False
     logger.info(f"S3 URI seems valid: {s3_uri}")
+    return True
+
+
+def validate_download_dir(dir: str) -> bool:
+    if not dir or type(dir) != str:
+        logger.error(f"Download dir must be non-empty string: {dir}")
+        return False
+
+    if not os.path.exists(dir):
+        logger.error(f"Download dir does not exist: {dir}")
+        return False
+
     return True
 
 
@@ -45,6 +62,15 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
             {},  # no file info in case of an error
         )
 
+    # then the download dir
+    if not validate_download_dir(download_dir):
+        return DownloadResult(
+            "",  # no download_file_path available
+            DANEResponse(400, "No download_dir specified"),
+            False,
+            {},  # no file info in case of an error
+        )
+
     s3 = boto3.client("s3")
     bucket, key, fn = deconstruct_s3_uri(s3_uri)
     download_file_path = os.path.join(download_dir, fn)
@@ -60,7 +86,7 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
 
     # go ahead with the download
     try:
-        with open(download_file_path, "wb") as f:
+        with codecs.open(download_file_path, "wb") as f:
             s3.download_fileobj(bucket, key, f)
             logger.info("download done")
         return DownloadResult(
@@ -80,3 +106,10 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
             False,
             {},  # no file info in case of an error
         )
+
+
+if __name__ == "__main__":
+    bucket, key, fn = deconstruct_s3_uri("ssssss")
+    print(bucket)
+    print(key)
+    print(fn)
