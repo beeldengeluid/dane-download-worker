@@ -80,14 +80,16 @@ def test_download_s3_uri__400(uri, download_dir):
 
 def test_download_s3_uri__200():
     s3_client_mock = mock({"download_fileobj": lambda x, y, z: None})
-    fd_mock = mock({"__enter__": lambda: None, "__exit__": lambda x, y, z: None})
+    fd_mock = mock(
+        {"__enter__": lambda: None, "__exit__": lambda x, y, z: None}
+    )  # context manager functions expected, since with statement is used
     with when(boto3).client("s3").thenReturn(s3_client_mock), when(
         s3_client_mock
     ).download_fileobj(**KWARGS).thenReturn(), when(s3_download).validate_download_dir(
         DUMMY_DOWNLOAD_DIR
     ).thenReturn(
         True
-    ), when(
+    ), when(  # mock the opening of the file
         codecs
     ).open(
         *ARGS
@@ -108,7 +110,7 @@ def test_download_s3_uri__200_already_downloaded():
         DUMMY_DOWNLOAD_DIR
     ).thenReturn(
         True
-    ), when(
+    ), when(  # force earlier existence of the download file
         os.path
     ).exists(
         *ARGS
@@ -129,7 +131,7 @@ def test_download_s3_uri__500():
         DUMMY_DOWNLOAD_DIR
     ).thenReturn(
         True
-    ), when(
+    ), when(  # forcefully raise an exception when opening the download file
         codecs
     ).open(
         *ARGS
