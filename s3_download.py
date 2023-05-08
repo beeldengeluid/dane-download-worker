@@ -103,15 +103,25 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
         )
     except Exception as e:
         logger.exception(f"Error while downloading {s3_uri}")
-        if os.path.exists(download_file_path):
-            logger.info("Deleting corrupt/empty file due to failed download")
-            os.remove(download_file_path)
+        delete_already_downloaded(download_file_path)
         return DownloadResult(
             download_file_path,
             DANEResponse(500, f"Unkown error: {str(e)}"),
             False,
             {},  # no file info in case of an error
         )
+
+
+def delete_already_downloaded(path: str):
+    logger.info("Deleting possibly corrupt/empty file due to failed download")
+    if os.path.exists(path):
+        try:
+            os.remove(path)
+            logger.info(f"Deleted {path}")
+        except Exception:
+            logger.info(f"Failed to remove {path}")
+    else:
+        logger.info("No prior download file found")
 
 
 if __name__ == "__main__":
