@@ -27,6 +27,7 @@ def validate_s3_uri(s3_uri: str) -> bool:
 
 
 def validate_download_dir(dir: str) -> bool:
+    logger.info(f"Validating Download dir {dir}")
     if not dir or type(dir) != str:
         logger.error(f"Download dir must be non-empty string: {dir}")
         return False
@@ -34,12 +35,13 @@ def validate_download_dir(dir: str) -> bool:
     if not os.path.exists(dir):
         logger.error(f"Download dir does not exist: {dir}")
         return False
-
+    logger.info("Download dir is ok")
     return True
 
 
 # e.g. s3://bucket/subdir/filename OR s3://bucket/filename
 def deconstruct_s3_uri(s3_uri: str) -> Tuple[str, str, str]:
+    logger.info(f"Deconstructing S3 URI: {s3_uri}")
     tmp = s3_uri[5:]  # bucket/subdir/filename
     return (
         tmp[0 : tmp.find("/")],  # bucket
@@ -71,12 +73,15 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
             {},  # no file info in case of an error
         )
 
+    logger.info("Initiating S3 client")
     s3 = boto3.client("s3")
     bucket, key, fn = deconstruct_s3_uri(s3_uri)
+    logger.info(f"bucket: {bucket}; key: {key}; fn: {fn}")
     download_file_path = os.path.join(download_dir, fn)
 
     # first check if the file was already downloaded
     if os.path.exists(download_file_path):
+        logger.info(f"Download path already exists: {download_file_path}")
         return DownloadResult(
             download_file_path,
             DANEResponse(200, f"{download_file_path} was already downloaded"),
@@ -87,8 +92,9 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
     # go ahead with the download
     try:
         with codecs.open(download_file_path, "wb") as f:
+            logger.info("Starting download")
             s3.download_fileobj(bucket, key, f)
-            logger.info("download done")
+            logger.info("Download done")
         return DownloadResult(
             download_file_path,
             DANEResponse(200, "Success"),
