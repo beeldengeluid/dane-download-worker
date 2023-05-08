@@ -50,6 +50,18 @@ def deconstruct_s3_uri(s3_uri: str) -> Tuple[str, str, str]:
     )
 
 
+def delete_already_downloaded(path: str):
+    logger.info("Deleting possibly corrupt/empty file due to failed download")
+    if os.path.exists(path):
+        try:
+            os.remove(path)
+            logger.info(f"Deleted {path}")
+        except Exception:
+            logger.info(f"Failed to remove {path}")
+    else:
+        logger.info("No prior download file found")
+
+
 # https://stackoverflow.com/questions/57280767/s3-an-error-occurred-403-when-calling-the-headobject-operation-forbidden
 # https://stackoverflow.com/questions/36144757/aws-cli-s3-a-client-error-403-occurred-when-calling-the-headobject-operation
 def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
@@ -73,8 +85,6 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
             {},  # no file info in case of an error
         )
 
-    logger.info("Initiating S3 client")
-    s3 = boto3.client("s3")
     bucket, key, fn = deconstruct_s3_uri(s3_uri)
     logger.info(f"bucket: {bucket}; key: {key}; fn: {fn}")
     download_file_path = os.path.join(download_dir, fn)
@@ -91,6 +101,8 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
 
     # go ahead with the download
     try:
+        logger.info("Initiating S3 client")
+        s3 = boto3.client("s3")
         with codecs.open(download_file_path, "wb") as f:
             logger.info("Starting download")
             s3.download_fileobj(bucket, key, f)
@@ -110,18 +122,6 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
             False,
             {},  # no file info in case of an error
         )
-
-
-def delete_already_downloaded(path: str):
-    logger.info("Deleting possibly corrupt/empty file due to failed download")
-    if os.path.exists(path):
-        try:
-            os.remove(path)
-            logger.info(f"Deleted {path}")
-        except Exception:
-            logger.info(f"Failed to remove {path}")
-    else:
-        logger.info("No prior download file found")
 
 
 if __name__ == "__main__":
