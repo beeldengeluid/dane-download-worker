@@ -148,7 +148,7 @@ class DownloadWorker(base_worker):
 
     def _check_whitelist(self, target_url: str, whitelist: list) -> bool:
         parse = urlparse(target_url)
-        if parse.netloc not in whitelist:
+        if parse.hostname not in whitelist:
             logger.warning(
                 "Requested URL Not in whitelist: {}".format("; ".join(whitelist))
             )
