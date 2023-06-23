@@ -40,6 +40,7 @@ def validate_download_dir(dir: str) -> bool:
 
 
 # e.g. s3://bucket/subdir/filename OR s3://bucket/filename
+# s3://my-bucket/assets/2101608050038691131__OTENHOEZITHET-HRE0000879F.mp4
 def deconstruct_s3_uri(s3_uri: str) -> Tuple[str, str, str]:
     logger.info(f"Deconstructing S3 URI: {s3_uri}")
     tmp = s3_uri[5:]  # bucket/subdir/filename
@@ -125,7 +126,9 @@ def download_s3_uri(s3_uri: str, download_dir: str) -> DownloadResult:
 
 
 if __name__ == "__main__":
-    bucket, key, fn = deconstruct_s3_uri("ssssss")
+    bucket, key, fn = deconstruct_s3_uri(
+        "s3://my-bucket/assets/2101608050038691131__OTENHOEZITHET-HRE0000879F.mp4"
+    )
     print(bucket)
     print(key)
     print(fn)

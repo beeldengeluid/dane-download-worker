@@ -158,7 +158,7 @@ class DownloadWorker(base_worker):
     # returns this "chunked" dir based on the doc id
     # (see dane.base_classes.getDirs())
     def _generate_dane_dirs_for_doc(self, doc: Document) -> dict:
-        return self.getDirs(doc).get("TEMP_FOLDER", None)
+        return self.getDirs(doc, create_output_dir=False).get("TEMP_FOLDER", None)
 
     def _determine_download_dir(self, doc: Document, task: Task) -> str:
         download_dir = task.args.get("PATHS", {}).get("TEMP_FOLDER", None)
