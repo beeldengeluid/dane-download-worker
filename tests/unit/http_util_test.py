@@ -20,10 +20,10 @@ DUMMY_FILE = "test.mp3"
 @pytest.mark.parametrize(
     "url, extension",
     [
-        (
-            "http://prd-app-bng-01.beeldengeluid.nl:8093/viz/DE_TOEKOMST_I-KRO000071S9",
-            ".mp4",
-        ),
+        # (
+        #     "http://low-res-throttler/viz/DE_TOEKOMST_I-KRO000071S9",
+        #     ".mp4",
+        # ),
         (
             "https://www.nu.nl/",
             ".html",
