@@ -18,10 +18,10 @@ def determine_url_extension(url: str):
 
 # determine the file extension of the requested content via Content-Type and Content-Disposition
 def determine_stream_extension(http_resp: HTTPResponse | Response) -> str:
-    logging.info("Determining stream extension from http headers")
+    logger.info("Determining stream extension from http headers")
     content_type = http_resp.headers.get("Content-Type", "")
     content_disposition = http_resp.headers.get("Content-Disposition", "")
-    logging.info(
+    logger.info(
         f"Content-Type: {content_type}; Content-Disposition: {content_disposition}"
     )
 
@@ -30,7 +30,7 @@ def determine_stream_extension(http_resp: HTTPResponse | Response) -> str:
     if ext:
         return ext
 
-    logging.info(f"Determine extension based on mime_type {content_type}")
+    logger.info(f"Determine extension based on mime_type {content_type}")
     # try to determine the extension based on the mime_type (taken from Content-Type)
     # TODO this could be done much more completely with a good mime_type lib
     if content_type.find("video/mp4") != -1:
@@ -50,7 +50,7 @@ def determine_stream_extension(http_resp: HTTPResponse | Response) -> str:
     elif content_type.find("text/html") != -1:
         ext = ".html"
     else:
-        logging.warning(f"No supported extension found! (content_type={content_type})")
+        logger.warning(f"No supported extension found! (content_type={content_type})")
         return ""
 
     return ext
@@ -61,7 +61,7 @@ def determine_stream_extension(http_resp: HTTPResponse | Response) -> str:
 # NOTE: not nice, but works for now.
 # NOTE: possibly replace with https://pypi.org/project/content-disposition/
 def extract_extension_from_content_disposition(content_disposition: str) -> str:
-    logging.info(
+    logger.info(
         f"Determine extension based on content disposition {content_disposition}"
     )
     if not content_disposition:
@@ -148,9 +148,7 @@ def to_safe_filename(
     safe_fn = "".join(c for c in safe_fn if c in whitelist)
 
     if len(safe_fn) > char_limit:
-        print(
-            "Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(
-                char_limit
-            )
+        logger.warning(
+            f"Warning, filename truncated because it was over {char_limit} chars. Filenames may no longer be unique"
         )
     return safe_fn[:char_limit]

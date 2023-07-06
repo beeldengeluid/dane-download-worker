@@ -134,6 +134,20 @@ def test_extract_filename_from_url(url: str, expected_fn: str):
 
 
 @pytest.mark.parametrize(
+    "url",
+    [(""), ("/"), ("http://nu.nl"), ("https://mediasuite.clariah.nl")],
+)
+def test_extract_filename_from_url__no_url_path(url: str):
+    try:
+        extracted = extract_filename_from_url(url)
+        assert extracted
+        assert "__" in extracted
+        assert len(extracted.split("__")) == 2
+    finally:
+        unstub()
+
+
+@pytest.mark.parametrize(
     "unsafe_fn, safe_fn",
     [
         ("test file", "test_file"),  # spaces should be replaced by underscores
