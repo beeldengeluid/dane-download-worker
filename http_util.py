@@ -1,10 +1,19 @@
 import logging
 import os
-from urllib.parse import unquote
+import requests
+import unicodedata
+import uuid
+import string
+from urllib.parse import unquote, urlparse
 from urllib3.response import HTTPResponse
 from requests import Response
 
 logger = logging.getLogger(__name__)
+VALID_FILENAME_CHARS = "-_. {}{}".format(string.ascii_letters, string.digits)
+
+
+def determine_url_extension(url: str):
+    return determine_stream_extension(requests.head(url))
 
 
 # determine the file extension of the requested content via Content-Type and Content-Disposition
@@ -71,3 +80,77 @@ def extract_extension_from_content_disposition(content_disposition: str) -> str:
             fn, ext = os.path.splitext(decoded_f)  # extract the file extension
             return ext
     return ""
+
+
+def url_to_output_filename(target_url: str) -> str:
+    download_filename = url_to_safe_filename(target_url)
+    fn, ext = os.path.splitext(download_filename)
+    if not ext:
+        logger.info("No extension in URL, determining extension with HEAD request")
+        extension = determine_url_extension(target_url)  # includes .
+        download_filename += f"{extension}"
+
+    return download_filename
+
+
+def url_to_safe_filename(url: str) -> str:
+    prepped_url = preprocess_url(url)
+    if not prepped_url:
+        return ""
+
+    unsafe_fn = extract_filename_from_url(prepped_url)
+
+    return to_safe_filename(unsafe_fn)
+
+
+def preprocess_url(url: str) -> str:
+    if type(url) != str:
+        return ""
+
+    # ; in the url is terrible, since it cuts off everything after the ; when running urlparse
+    url = url.replace(";", "")
+
+    # make sure to get rid of the URL encoding
+    return unquote(url)
+
+
+def extract_filename_from_url(url: str) -> str:
+    if type(url) != str:
+        return ""
+
+    # grab the url path
+    url_path = urlparse(url).path
+    if url_path.rfind("/") == len(url_path) - 1:
+        url_path = url_path[:-1]
+    url_host = urlparse(url).netloc
+
+    # get the file/dir name from the URL (if any)
+    fn = os.path.basename(url_path)
+
+    # if the url_path is empty, the file name is meaningless, so return a string based on the url_host
+    return (
+        f"{url_host.replace('.', '_')}__{str(uuid.uuid4())}" if fn in ["", "/"] else fn
+    )
+
+
+def to_safe_filename(
+    fn: str, whitelist: str = VALID_FILENAME_CHARS, char_limit: int = 255
+) -> str:
+    if not fn:
+        return ""
+
+    # replace spaces with underscore (spaces in filenames aren't nice)
+    fn = fn.replace(" ", "_")
+
+    safe_fn = unicodedata.normalize("NFKD", fn).encode("ASCII", "ignore").decode()
+
+    # keep only whitelisted chars
+    safe_fn = "".join(c for c in safe_fn if c in whitelist)
+
+    if len(safe_fn) > char_limit:
+        print(
+            "Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(
+                char_limit
+            )
+        )
+    return safe_fn[:char_limit]
