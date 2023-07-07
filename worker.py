@@ -3,6 +3,7 @@ import logging
 from requests.utils import requote_uri
 from urllib.parse import urlparse
 import os
+import validators
 from dane.base_classes import base_worker
 from dane.config import cfg
 from dane import Result, Task, Document
@@ -60,7 +61,11 @@ class DownloadWorker(base_worker):
         if not is_s3:
             if not self._check_whitelist(target_url, self.whitelist):
                 return DANEResponse(
-                    403, f"Source url not in whitelist: {target_url}"
+                    403, f"Source URL not in whitelist: {target_url}"
+                ).to_json()
+            if validators.url(target_url) is not True:
+                return DANEResponse(
+                    400, f"Invalid URL provided: {target_url}"
                 ).to_json()
 
         # define the download/temp dir by checking task arguments and default DANE config
