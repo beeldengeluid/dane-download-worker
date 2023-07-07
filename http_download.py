@@ -1,23 +1,18 @@
 import os
-import string
-import unicodedata
-import uuid
 import logging
 import urllib.request as req
-from urllib.parse import urlparse, unquote
 from urllib.error import HTTPError
 import shutil
 from model import DownloadResult, DANEResponse
+from http_util import url_to_output_filename
 
 
 logger = logging.getLogger(__name__)
-VALID_FILENAME_CHARS = "-_. {}{}".format(string.ascii_letters, string.digits)
 
 
 def download_http(target_url, download_dir) -> DownloadResult:
-    download_filename = url_to_safe_filename(target_url)
+    download_filename = url_to_output_filename(target_url)
     download_file_path = os.path.join(download_dir, download_filename)
-
     # first check if the file was already downloaded
     if os.path.exists(download_file_path):
         return DownloadResult(
@@ -84,66 +79,3 @@ def extract_file_info(resp_headers):
         "Content-Type": c_type,
         "Content-Length": content_length,
     }
-
-
-def url_to_safe_filename(url: str) -> str:
-    prepped_url = preprocess_url(url)
-    if not prepped_url:
-        return ""
-
-    unsafe_fn = extract_filename_from_url(prepped_url)
-
-    return to_safe_filename(unsafe_fn)
-
-
-def preprocess_url(url: str) -> str:
-    if type(url) != str:
-        return ""
-
-    # ; in the url is terrible, since it cuts off everything after the ; when running urlparse
-    url = url.replace(";", "")
-
-    # make sure to get rid of the URL encoding
-    return unquote(url)
-
-
-def extract_filename_from_url(url: str) -> str:
-    if type(url) != str:
-        return ""
-
-    # grab the url path
-    url_path = urlparse(url).path
-    if url_path.rfind("/") == len(url_path) - 1:
-        url_path = url_path[:-1]
-    url_host = urlparse(url).netloc
-
-    # get the file/dir name from the URL (if any)
-    fn = os.path.basename(url_path)
-
-    # if the url_path is empty, the file name is meaningless, so return a string based on the url_host
-    return (
-        f"{url_host.replace('.', '_')}__{str(uuid.uuid4())}" if fn in ["", "/"] else fn
-    )
-
-
-def to_safe_filename(
-    fn: str, whitelist: str = VALID_FILENAME_CHARS, char_limit: int = 255
-) -> str:
-    if not fn:
-        return ""
-
-    # replace spaces with underscore (spaces in filenames aren't nice)
-    fn = fn.replace(" ", "_")
-
-    safe_fn = unicodedata.normalize("NFKD", fn).encode("ASCII", "ignore").decode()
-
-    # keep only whitelisted chars
-    safe_fn = "".join(c for c in safe_fn if c in whitelist)
-
-    if len(safe_fn) > char_limit:
-        print(
-            "Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(
-                char_limit
-            )
-        )
-    return safe_fn[:char_limit]
