@@ -12,7 +12,9 @@ jobs:
   test:
     uses: ./.github/workflows/_test.yml
 
-  build-and-push-ecr:
-    uses: ./.github/workflows/_build-and-push-ecr.yml
+  deploy:
+    uses: ./.github/workflows/_deploy.yml
     secrets: inherit
     needs: [test]
+    with:
+      target: ghcr

@@ -1,0 +1,22 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        type: string
+        required: true
+
+jobs:
+  deploy-ecr:
+    if: ${{ inputs.target == 'ecr' }}
+    uses: ./.github/workflows/_build-push-cached-ecr.yml
+    permissions:
+      id-token: write
+      contents: read
+  deploy-ghrc:
+    if: ${{ inputs.target == 'ghcr' }}
+    uses: ./.github/workflows/_build-push-cached-ghcr.yml
+    permissions:
+      contents: read
+      packages: write
