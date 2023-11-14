@@ -51,6 +51,16 @@ class DownloadWorker(base_worker):
             no_api=self.UNIT_TESTING,
         )
 
+        # NOTE: cannot be automaticcally filled, because no git client is present
+        if not self.generator:
+            logger.info("Generator was None, creating it now")
+            self.generator = {
+                "id": "dane-download-worker",
+                "type": "Software",
+                "name": "DOWNLOAD",
+                "homepage": "https://github.com/beeldengeluid/dane-download-worker",
+            }
+
     def callback(self, task, doc):  # noqa: C901 #TODO
         # encode the URI, make sure it's safe
         target_url = requote_uri(doc.target["url"])
